@@ -12,7 +12,7 @@ import { firebaseConfig } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let board;
+let board = null;
 let game = new Chess();
 let mode = "local";
 let roomId = null;
@@ -24,19 +24,38 @@ const roomInput = document.getElementById("roomInput");
 const roomCodeEl = document.getElementById("roomCode");
 const moveHistoryEl = document.getElementById("moveHistory");
 
-function initBoard() {
-  board = Chessboard("board", {
-    draggable: true,
-    position: "start",
-    pieceTheme:
-      "https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png",
-    onDragStart,
-    onDrop,
-    onSnapEnd
-  });
+function safeSetStatus(text) {
+  if (statusEl) statusEl.textContent = text;
+}
 
-  updateStatus();
-  renderMoveHistory();
+function renderMoveHistory() {
+  if (!moveHistoryEl) return;
+  const history = game.history();
+  moveHistoryEl.innerHTML = "";
+  history.forEach((move, i) => {
+    const li = document.createElement("li");
+    li.textContent = `${i + 1}. ${move}`;
+    moveHistoryEl.appendChild(li);
+  });
+}
+
+function updateStatus() {
+  let text = "";
+
+  if (game.in_checkmate()) {
+    text = `Checkmate. ${game.turn() === "w" ? "Black" : "White"} wins.`;
+  } else if (game.in_draw()) {
+    text = "Draw.";
+  } else {
+    text = `${game.turn() === "w" ? "White" : "Black"} to move`;
+    if (game.in_check()) text += " — Check!";
+  }
+
+  if (mode === "ai") text += " | Mode: AI";
+  if (mode === "local") text += " | Mode: Local";
+  if (mode === "online") text += ` | Mode: Online | You are ${playerColor}`;
+
+  safeSetStatus(text);
 }
 
 function onDragStart(source, piece) {
@@ -53,6 +72,8 @@ function onDragStart(source, piece) {
     const turnColor = game.turn() === "w" ? "white" : "black";
     if (turnColor !== playerColor) return false;
   }
+
+  return true;
 }
 
 function onDrop(source, target) {
@@ -92,34 +113,11 @@ function makeAIMove() {
   renderMoveHistory();
 }
 
-function updateStatus() {
-  let text = "";
-
-  if (game.in_checkmate()) {
-    text = `Checkmate. ${game.turn() === "w" ? "Black" : "White"} wins.`;
-  } else if (game.in_draw()) {
-    text = "Draw.";
-  } else {
-    text = `${game.turn() === "w" ? "White" : "Black"} to move`;
-    if (game.in_check()) text += " — Check!";
+function cleanupRoomListener() {
+  if (roomListenerRef) {
+    off(roomListenerRef);
+    roomListenerRef = null;
   }
-
-  if (mode === "ai") text += " | Mode: AI";
-  if (mode === "local") text += " | Mode: Local";
-  if (mode === "online") text += ` | Mode: Online | You are ${playerColor}`;
-
-  statusEl.textContent = text;
-}
-
-function renderMoveHistory() {
-  const history = game.history();
-  moveHistoryEl.innerHTML = "";
-
-  history.forEach((move, i) => {
-    const li = document.createElement("li");
-    li.textContent = `${i + 1}. ${move}`;
-    moveHistoryEl.appendChild(li);
-  });
 }
 
 function resetGame() {
@@ -137,8 +135,8 @@ function startAI() {
   cleanupRoomListener();
   mode = "ai";
   roomId = null;
-  roomCodeEl.textContent = "None";
   playerColor = "white";
+  if (roomCodeEl) roomCodeEl.textContent = "None";
   resetGame();
 }
 
@@ -146,13 +144,13 @@ function startLocal() {
   cleanupRoomListener();
   mode = "local";
   roomId = null;
-  roomCodeEl.textContent = "None";
   playerColor = "white";
+  if (roomCodeEl) roomCodeEl.textContent = "None";
   resetGame();
 }
 
 function flipBoard() {
-  board.flip();
+  if (board) board.flip();
 }
 
 function generateRoomId() {
@@ -164,7 +162,7 @@ async function createRoom() {
   mode = "online";
   roomId = generateRoomId();
   playerColor = "white";
-  roomCodeEl.textContent = roomId;
+  if (roomCodeEl) roomCodeEl.textContent = roomId;
 
   game.reset();
   board.start();
@@ -202,10 +200,10 @@ async function joinRoom() {
   mode = "online";
   roomId = enteredRoom;
   playerColor = "black";
-  roomCodeEl.textContent = roomId;
+  if (roomCodeEl) roomCodeEl.textContent = roomId;
 
   const data = snapshot.val();
-  if (data?.fen) {
+  if (data && data.fen) {
     game.load(data.fen);
     board.position(data.fen, true);
   }
@@ -245,18 +243,40 @@ function listenToRoom() {
   });
 }
 
-function cleanupRoomListener() {
-  if (roomListenerRef) {
-    off(roomListenerRef);
-    roomListenerRef = null;
+function initBoard() {
+  if (typeof Chessboard === "undefined") {
+    safeSetStatus("Error: chessboard.js did not load");
+    return;
   }
+
+  if (typeof Chess === "undefined") {
+    safeSetStatus("Error: chess.js did not load");
+    return;
+  }
+
+  board = Chessboard("board", {
+    draggable: true,
+    position: "start",
+    pieceTheme:
+      "https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png",
+    onDragStart,
+    onDrop,
+    onSnapEnd
+  });
+
+  updateStatus();
+  renderMoveHistory();
 }
 
-document.getElementById("aiBtn").addEventListener("click", startAI);
-document.getElementById("localBtn").addEventListener("click", startLocal);
-document.getElementById("createRoomBtn").addEventListener("click", createRoom);
-document.getElementById("joinRoomBtn").addEventListener("click", joinRoom);
-document.getElementById("flipBtn").addEventListener("click", flipBoard);
-document.getElementById("resetBtn").addEventListener("click", resetGame);
+document.getElementById("aiBtn")?.addEventListener("click", startAI);
+document.getElementById("localBtn")?.addEventListener("click", startLocal);
+document.getElementById("createRoomBtn")?.addEventListener("click", createRoom);
+document.getElementById("joinRoomBtn")?.addEventListener("click", joinRoom);
+document.getElementById("flipBtn")?.addEventListener("click", flipBoard);
+document.getElementById("resetBtn")?.addEventListener("click", resetGame);
+
+window.addEventListener("error", (e) => {
+  safeSetStatus(`JS Error: ${e.message}`);
+});
 
 initBoard();
