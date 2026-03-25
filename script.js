@@ -3,6 +3,7 @@ import {
   getDatabase,
   ref,
   set,
+  get,
   onValue,
   off
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
@@ -41,16 +42,16 @@ function initBoard() {
 function onDragStart(source, piece) {
   if (game.game_over()) return false;
 
-  if (mode === "online") {
-    const turn = game.turn() === "w" ? "white" : "black";
-    if (turn !== playerColor) return false;
-  }
-
   if (
     (game.turn() === "w" && piece.startsWith("b")) ||
     (game.turn() === "b" && piece.startsWith("w"))
   ) {
     return false;
+  }
+
+  if (mode === "online") {
+    const turnColor = game.turn() === "w" ? "white" : "black";
+    if (turnColor !== playerColor) return false;
   }
 }
 
@@ -68,7 +69,7 @@ function onDrop(source, target) {
   renderMoveHistory();
 
   if (mode === "ai" && !game.game_over()) {
-    window.setTimeout(makeAIMove, 350);
+    setTimeout(makeAIMove, 300);
   }
 
   if (mode === "online" && roomId) {
@@ -84,8 +85,8 @@ function makeAIMove() {
   const moves = game.moves();
   if (!moves.length) return;
 
-  const randomMove = moves[Math.floor(Math.random() * moves.length)];
-  game.move(randomMove);
+  const move = moves[Math.floor(Math.random() * moves.length)];
+  game.move(move);
   board.position(game.fen(), true);
   updateStatus();
   renderMoveHistory();
@@ -104,10 +105,8 @@ function updateStatus() {
   }
 
   if (mode === "ai") text += " | Mode: AI";
-  if (mode === "local") text += " | Mode: Local 2 Players";
-  if (mode === "online") {
-    text += ` | Mode: Online | You are ${playerColor}`;
-  }
+  if (mode === "local") text += " | Mode: Local";
+  if (mode === "online") text += ` | Mode: Online | You are ${playerColor}`;
 
   statusEl.textContent = text;
 }
@@ -160,7 +159,7 @@ function generateRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
-function createRoom() {
+async function createRoom() {
   cleanupRoomListener();
   mode = "online";
   roomId = generateRoomId();
@@ -173,40 +172,47 @@ function createRoom() {
   renderMoveHistory();
 
   const roomRef = ref(db, `rooms/${roomId}`);
-  set(roomRef, {
+  await set(roomRef, {
     fen: game.fen(),
     turn: game.turn(),
-    whiteJoined: true,
-    blackJoined: false,
-    updatedAt: Date.now()
+    createdAt: Date.now()
   });
 
   listenToRoom();
 }
 
-function joinRoom() {
+async function joinRoom() {
   const enteredRoom = roomInput.value.trim().toUpperCase();
+
   if (!enteredRoom) {
     alert("Enter a room code first.");
     return;
   }
 
   cleanupRoomListener();
+
+  const roomRef = ref(db, `rooms/${enteredRoom}`);
+  const snapshot = await get(roomRef);
+
+  if (!snapshot.exists()) {
+    alert("Room not found.");
+    return;
+  }
+
   mode = "online";
   roomId = enteredRoom;
   playerColor = "black";
   roomCodeEl.textContent = roomId;
 
-  const roomRef = ref(db, `rooms/${roomId}`);
-  set(roomRef, {
-    fen: game.fen(),
-    turn: game.turn(),
-    whiteJoined: true,
-    blackJoined: true,
-    updatedAt: Date.now()
-  }).then(() => {
-    listenToRoom();
-  });
+  const data = snapshot.val();
+  if (data?.fen) {
+    game.load(data.fen);
+    board.position(data.fen, true);
+  }
+
+  updateStatus();
+  renderMoveHistory();
+  listenToRoom();
 }
 
 function syncRoom() {
@@ -216,8 +222,6 @@ function syncRoom() {
   set(roomRef, {
     fen: game.fen(),
     turn: game.turn(),
-    whiteJoined: true,
-    blackJoined: true,
     updatedAt: Date.now()
   });
 }
@@ -232,10 +236,12 @@ function listenToRoom() {
     const data = snapshot.val();
     if (!data || !data.fen) return;
 
-    game.load(data.fen);
-    board.position(data.fen, true);
-    updateStatus();
-    renderMoveHistory();
+    if (game.fen() !== data.fen) {
+      game.load(data.fen);
+      board.position(data.fen, true);
+      updateStatus();
+      renderMoveHistory();
+    }
   });
 }
 
