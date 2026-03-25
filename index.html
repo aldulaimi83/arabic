@@ -2,36 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Youooo Chess</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.css"/>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.css"
+  />
 </head>
 <body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>♟ Youooo Chess</h1>
+        <p class="subtitle">Play vs AI, local friend, or online room</p>
+      </div>
+      <div class="badge">Live Chess</div>
+    </header>
 
-<div class="container">
+    <main class="layout">
+      <section class="board-panel">
+        <div class="board-wrap">
+          <div id="board"></div>
+        </div>
+      </section>
 
-  <h1>♟ Youooo Chess</h1>
+      <aside class="side-panel">
+        <div class="card">
+          <h2>Game Modes</h2>
+          <div class="controls">
+            <button id="aiBtn">Play vs AI</button>
+            <button id="localBtn">2 Players</button>
+            <button id="createRoomBtn">Create Room</button>
+            <button id="joinRoomBtn">Join Room</button>
+            <button id="flipBtn" class="secondary">Flip Board</button>
+            <button id="resetBtn" class="danger">Reset Game</button>
+          </div>
+        </div>
 
-  <div id="board"></div>
+        <div class="card">
+          <h2>Online Room</h2>
+          <input id="roomInput" type="text" placeholder="Enter room code" />
+          <div class="room-row">
+            <span class="label">Current room:</span>
+            <span id="roomCode">None</span>
+          </div>
+        </div>
 
-  <div class="controls">
-    <button onclick="startAI()">Play vs AI</button>
-    <button onclick="startLocal()">2 Players</button>
-    <button onclick="createRoom()">Create Room</button>
-    <button onclick="joinRoom()">Join Room</button>
-    <button onclick="flipBoard()">Flip</button>
+        <div class="card">
+          <h2>Status</h2>
+          <div id="status">Loading...</div>
+        </div>
+
+        <div class="card">
+          <h2>Move History</h2>
+          <ol id="moveHistory" class="history"></ol>
+        </div>
+      </aside>
+    </main>
   </div>
 
-  <input id="roomInput" placeholder="Enter Room Code"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script>
 
-  <div id="status"></div>
-
-</div>
-
-<script src="firebase-config.js"></script>
-<script src="script.js"></script>
-
+  <script type="module" src="script.js"></script>
 </body>
 </html>
