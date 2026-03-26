@@ -1,0 +1,14 @@
+{
+  "name": "youooo-chess-backend",
+  "version": "1.0.0",
+  "description": "Realtime backend for Youooo Chess",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
