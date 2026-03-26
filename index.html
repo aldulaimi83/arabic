@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Youooo Chess</title>
-  <link rel="stylesheet" href="style.css" />
 
+  <link rel="stylesheet" href="style.css" />
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.css"
@@ -16,9 +16,9 @@
     <header class="topbar">
       <div>
         <h1>♟ Youooo Chess</h1>
-        <p class="subtitle">Play vs AI, local friend, or online room</p>
+        <p class="subtitle">Play vs AI, local friend, or online rooms</p>
       </div>
-      <div class="badge">Live Chess</div>
+      <div class="badge">Online Ready</div>
     </header>
 
     <main class="layout">
@@ -48,6 +48,10 @@
             <span class="label">Current room:</span>
             <span id="roomCode">None</span>
           </div>
+          <div class="room-row">
+            <span class="label">Server:</span>
+            <span id="serverState">Connecting...</span>
+          </div>
         </div>
 
         <div class="card">
@@ -63,9 +67,9 @@
     </main>
   </div>
 
- <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script>
-<script type="module" src="script.js"></script>
-
-  </body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script src="script.js"></script>
+</body>
 </html>
