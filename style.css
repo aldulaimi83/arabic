@@ -5,8 +5,7 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background:
-    radial-gradient(circle at top, #1e293b 0%, #0f172a 45%, #020617 100%);
+  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 45%, #020617 100%);
   color: #f8fafc;
   min-height: 100vh;
 }
@@ -62,12 +61,14 @@ body {
 }
 
 .board-wrap {
-  max-width: 760px;
+  width: min(82vw, 760px);
   margin: 0 auto;
 }
 
 #board {
-  width: min(82vw, 760px);
+  width: 100%;
+  max-width: 760px;
+  min-height: 420px;
   margin: 0 auto;
   border-radius: 18px;
   overflow: hidden;
@@ -167,7 +168,11 @@ input {
     grid-template-columns: 1fr;
   }
 
-  #board {
+  .board-wrap {
     width: min(92vw, 680px);
+  }
+
+  #board {
+    min-height: 320px;
   }
 }
