@@ -2,24 +2,39 @@ const SERVER_URL = "https://youooo-chess-backend.onrender.com";
 
 let socket = null;
 let board = null;
-let game = new Chess();
+let game = null;
 
 let mode = "local";
 let roomId = null;
 let playerColor = "white";
 let isMyTurn = true;
 
-const statusEl = document.getElementById("status");
-const roomInput = document.getElementById("roomInput");
-const roomCodeEl = document.getElementById("roomCode");
-const moveHistoryEl = document.getElementById("moveHistory");
-const serverStateEl = document.getElementById("serverState");
+let statusEl;
+let roomInput;
+let roomCodeEl;
+let moveHistoryEl;
+let serverStateEl;
 
 function safeSetStatus(text) {
   if (statusEl) statusEl.textContent = text;
 }
 
+function renderMoveHistory() {
+  if (!moveHistoryEl || !game) return;
+
+  moveHistoryEl.innerHTML = "";
+  const history = game.history();
+
+  history.forEach((move, i) => {
+    const li = document.createElement("li");
+    li.textContent = `${i + 1}. ${move}`;
+    moveHistoryEl.appendChild(li);
+  });
+}
+
 function updateStatus() {
+  if (!game) return;
+
   let text = "";
 
   if (game.in_checkmate()) {
@@ -41,18 +56,26 @@ function updateStatus() {
   safeSetStatus(text);
 }
 
-function renderMoveHistory() {
-  moveHistoryEl.innerHTML = "";
-  const history = game.history();
+function applyBoardPosition() {
+  if (!board || !game) return;
+  board.position(game.fen(), true);
+}
 
-  history.forEach((move, i) => {
-    const li = document.createElement("li");
-    li.textContent = `${i + 1}. ${move}`;
-    moveHistoryEl.appendChild(li);
-  });
+function resetGameLocal() {
+  if (!game) game = new Chess();
+  game.reset();
+
+  if (board) {
+    board.position("start", true);
+  }
+
+  isMyTurn = true;
+  renderMoveHistory();
+  updateStatus();
 }
 
 function onDragStart(source, piece) {
+  if (!game) return false;
   if (game.game_over()) return false;
 
   if (
@@ -72,6 +95,8 @@ function onDragStart(source, piece) {
 }
 
 function onDrop(source, target) {
+  if (!game) return "snapback";
+
   const move = game.move({
     from: source,
     to: target,
@@ -80,7 +105,7 @@ function onDrop(source, target) {
 
   if (move === null) return "snapback";
 
-  board.position(game.fen(), true);
+  applyBoardPosition();
   renderMoveHistory();
   updateStatus();
 
@@ -96,57 +121,55 @@ function onDrop(source, target) {
         from: source,
         to: target,
         promotion: "q"
-      },
-      fen: game.fen()
+      }
     });
     updateStatus();
   }
 }
 
 function onSnapEnd() {
-  board.position(game.fen());
+  applyBoardPosition();
 }
 
 function makeAIMove() {
+  if (!game || !board) return;
+
   const moves = game.moves();
   if (!moves.length) return;
 
   const randomMove = moves[Math.floor(Math.random() * moves.length)];
   game.move(randomMove);
-  board.position(game.fen(), true);
+  applyBoardPosition();
   renderMoveHistory();
   updateStatus();
 }
 
-function resetGameLocal() {
-  game.reset();
-  board.start();
-  renderMoveHistory();
-  updateStatus();
+function leaveOnlineRoom() {
+  if (socket && roomId) {
+    socket.emit("leave-room", { roomId });
+  }
+
+  roomId = null;
+  playerColor = "white";
+  isMyTurn = true;
+
+  if (roomCodeEl) roomCodeEl.textContent = "None";
 }
 
 function startAI() {
   leaveOnlineRoom();
   mode = "ai";
-  roomId = null;
-  playerColor = "white";
-  isMyTurn = true;
-  roomCodeEl.textContent = "None";
   resetGameLocal();
 }
 
 function startLocal() {
   leaveOnlineRoom();
   mode = "local";
-  roomId = null;
-  playerColor = "white";
-  isMyTurn = true;
-  roomCodeEl.textContent = "None";
   resetGameLocal();
 }
 
 function flipBoard() {
-  board.flip();
+  if (board) board.flip();
 }
 
 function randomRoomCode() {
@@ -161,11 +184,11 @@ function connectSocket() {
   });
 
   socket.on("connect", () => {
-    serverStateEl.textContent = "Connected";
+    if (serverStateEl) serverStateEl.textContent = "Connected";
   });
 
   socket.on("disconnect", () => {
-    serverStateEl.textContent = "Disconnected";
+    if (serverStateEl) serverStateEl.textContent = "Disconnected";
   });
 
   socket.on("room-created", (data) => {
@@ -173,10 +196,17 @@ function connectSocket() {
     roomId = data.roomId;
     playerColor = data.color;
     isMyTurn = data.color === "white";
-    roomCodeEl.textContent = roomId;
 
+    if (roomCodeEl) roomCodeEl.textContent = roomId;
+
+    if (!game) game = new Chess();
     game.reset();
-    board.start();
+
+    if (board) {
+      board.orientation("white");
+      board.position("start", true);
+    }
+
     renderMoveHistory();
     updateStatus();
   });
@@ -185,33 +215,40 @@ function connectSocket() {
     mode = "online";
     roomId = data.roomId;
     playerColor = data.color;
-    isMyTurn = data.color === "white" ? game.turn() === "w" : game.turn() === "b";
-    roomCodeEl.textContent = roomId;
+
+    if (roomCodeEl) roomCodeEl.textContent = roomId;
+
+    if (!game) game = new Chess();
+    game.reset();
 
     if (data.fen) {
       game.load(data.fen);
-      board.position(data.fen, true);
     }
 
-    if (playerColor === "black") {
-      board.orientation("black");
-    } else {
-      board.orientation("white");
+    if (board) {
+      board.orientation(playerColor === "black" ? "black" : "white");
+      applyBoardPosition();
     }
+
+    isMyTurn =
+      playerColor === "white"
+        ? game.turn() === "w"
+        : game.turn() === "b";
 
     renderMoveHistory();
     updateStatus();
   });
 
   socket.on("opponent-joined", () => {
-    safeSetStatus("Opponent joined. Game started.");
     updateStatus();
   });
 
   socket.on("move-played", (data) => {
-    if (data.fen !== game.fen()) {
+    if (!game) game = new Chess();
+
+    if (data.fen && data.fen !== game.fen()) {
       game.load(data.fen);
-      board.position(data.fen, true);
+      applyBoardPosition();
       isMyTurn = true;
       renderMoveHistory();
       updateStatus();
@@ -219,8 +256,15 @@ function connectSocket() {
   });
 
   socket.on("room-reset", (data) => {
-    game.load(data.fen);
-    board.position(data.fen, true);
+    if (!game) game = new Chess();
+
+    if (data.fen) {
+      game.load(data.fen);
+    } else {
+      game.reset();
+    }
+
+    applyBoardPosition();
     isMyTurn = playerColor === "white";
     renderMoveHistory();
     updateStatus();
@@ -237,7 +281,6 @@ function connectSocket() {
 
 function createRoom() {
   connectSocket();
-
   const newRoomId = randomRoomCode();
   socket.emit("create-room", { roomId: newRoomId });
 }
@@ -259,18 +302,14 @@ function resetOnlineGame() {
   socket.emit("reset-room", { roomId });
 }
 
-function leaveOnlineRoom() {
-  if (socket && roomId) {
-    socket.emit("leave-room", { roomId });
+function initBoard() {
+  const boardElement = document.getElementById("board");
+
+  if (!boardElement) {
+    safeSetStatus("Error: board element not found");
+    return;
   }
 
-  roomId = null;
-  playerColor = "white";
-  isMyTurn = true;
-  roomCodeEl.textContent = "None";
-}
-
-function initBoard() {
   if (typeof Chess === "undefined") {
     safeSetStatus("Error: chess.js did not load");
     return;
@@ -280,6 +319,8 @@ function initBoard() {
     safeSetStatus("Error: chessboard.js did not load");
     return;
   }
+
+  game = new Chess();
 
   board = Chessboard("board", {
     draggable: true,
@@ -291,26 +332,42 @@ function initBoard() {
     onSnapEnd
   });
 
-  renderMoveHistory();
-  updateStatus();
+  setTimeout(() => {
+    if (board) {
+      board.position("start", true);
+    }
+    renderMoveHistory();
+    updateStatus();
+  }, 50);
 }
 
-document.getElementById("aiBtn").addEventListener("click", startAI);
-document.getElementById("localBtn").addEventListener("click", startLocal);
-document.getElementById("createRoomBtn").addEventListener("click", createRoom);
-document.getElementById("joinRoomBtn").addEventListener("click", joinRoom);
-document.getElementById("flipBtn").addEventListener("click", flipBoard);
-document.getElementById("resetBtn").addEventListener("click", () => {
-  if (mode === "online") {
-    resetOnlineGame();
-  } else {
-    resetGameLocal();
-  }
-});
+function bindEvents() {
+  document.getElementById("aiBtn")?.addEventListener("click", startAI);
+  document.getElementById("localBtn")?.addEventListener("click", startLocal);
+  document.getElementById("createRoomBtn")?.addEventListener("click", createRoom);
+  document.getElementById("joinRoomBtn")?.addEventListener("click", joinRoom);
+  document.getElementById("flipBtn")?.addEventListener("click", flipBoard);
+  document.getElementById("resetBtn")?.addEventListener("click", () => {
+    if (mode === "online") {
+      resetOnlineGame();
+    } else {
+      resetGameLocal();
+    }
+  });
+}
 
 window.addEventListener("error", (e) => {
   safeSetStatus(`JS Error: ${e.message}`);
 });
 
-initBoard();
-connectSocket();
+document.addEventListener("DOMContentLoaded", () => {
+  statusEl = document.getElementById("status");
+  roomInput = document.getElementById("roomInput");
+  roomCodeEl = document.getElementById("roomCode");
+  moveHistoryEl = document.getElementById("moveHistory");
+  serverStateEl = document.getElementById("serverState");
+
+  bindEvents();
+  initBoard();
+  connectSocket();
+});
