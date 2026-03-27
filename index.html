@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Youooo Chess</title>
+  <title>Youooo Chess Academy</title>
 
   <link rel="stylesheet" href="style.css" />
   <link
@@ -15,61 +15,130 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <h1>♟ Youooo Chess</h1>
-        <p class="subtitle">Play vs AI, local friend, or online rooms</p>
+        <h1>♟ Youooo Chess Academy</h1>
+        <p class="subtitle">Play, learn, practice, and level up from beginner to expert</p>
       </div>
-      <div class="badge">Online Ready</div>
+      <div class="badge">Academy V1</div>
     </header>
+
+    <div class="tabbar">
+      <button id="playTabBtn" class="tab-btn active">Play</button>
+      <button id="academyTabBtn" class="tab-btn">Academy</button>
+    </div>
 
     <main class="layout">
       <section class="board-panel">
+        <div class="board-toolbar">
+          <div class="mode-pill" id="currentSectionLabel">Play Mode</div>
+          <div class="board-actions">
+            <button id="flipBtn" class="secondary small-btn">Flip Board</button>
+            <button id="resetBtn" class="danger small-btn">Reset</button>
+          </div>
+        </div>
+
         <div class="board-wrap">
           <div id="board"></div>
+        </div>
+
+        <div class="status-card">
+          <h3>Status</h3>
+          <div id="status">Loading...</div>
+        </div>
+
+        <div class="history-card">
+          <h3>Move History</h3>
+          <ol id="moveHistory" class="history"></ol>
         </div>
       </section>
 
       <aside class="side-panel">
-        <div class="card">
-          <h2>Game Modes</h2>
-          <div class="controls">
-            <button id="aiBtn">Play vs AI</button>
-            <button id="localBtn">2 Players</button>
-            <button id="createRoomBtn">Create Room</button>
-            <button id="joinRoomBtn">Join Room</button>
-            <button id="flipBtn" class="secondary">Flip Board</button>
-            <button id="resetBtn" class="danger">Reset Game</button>
+        <!-- PLAY PANEL -->
+        <div id="playPanel" class="panel active-panel">
+          <div class="card">
+            <h2>Game Modes</h2>
+            <div class="controls">
+              <button id="aiBtn">Play vs AI</button>
+              <button id="localBtn">2 Players</button>
+              <button id="createRoomBtn">Create Room</button>
+              <button id="joinRoomBtn">Join Room</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Online Room</h2>
+            <input id="roomInput" type="text" placeholder="Enter room code" />
+            <div class="room-row">
+              <span class="label">Current room:</span>
+              <span id="roomCode">None</span>
+            </div>
+            <div class="room-row">
+              <span class="label">Server:</span>
+              <span id="serverState">Connecting...</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>How to Use</h2>
+            <ul class="help-list">
+              <li><strong>AI:</strong> quick casual practice</li>
+              <li><strong>2 Players:</strong> play on one device</li>
+              <li><strong>Create Room:</strong> make an online room</li>
+              <li><strong>Join Room:</strong> enter a friend’s room code</li>
+            </ul>
           </div>
         </div>
 
-        <div class="card">
-          <h2>Online Room</h2>
-          <input id="roomInput" type="text" placeholder="Enter room code" />
-          <div class="room-row">
-            <span class="label">Current room:</span>
-            <span id="roomCode">None</span>
+        <!-- ACADEMY PANEL -->
+        <div id="academyPanel" class="panel">
+          <div class="card">
+            <h2>Academy Levels</h2>
+            <div class="level-tabs">
+              <button class="level-btn active-level" data-level="beginner">Beginner</button>
+              <button class="level-btn" data-level="intermediate">Intermediate</button>
+              <button class="level-btn" data-level="advanced">Advanced</button>
+              <button class="level-btn" data-level="expert">Expert</button>
+            </div>
           </div>
-          <div class="room-row">
-            <span class="label">Server:</span>
-            <span id="serverState">Connecting...</span>
+
+          <div class="card">
+            <div class="academy-header-row">
+              <h2>Lessons</h2>
+              <span id="academyProgressBadge" class="progress-badge">0% Complete</span>
+            </div>
+            <div id="lessonList" class="lesson-list"></div>
           </div>
-        </div>
 
-        <div class="card">
-          <h2>Status</h2>
-          <div id="status">Loading...</div>
-        </div>
+          <div class="card">
+            <h2 id="lessonTitle">Select a lesson</h2>
+            <p id="lessonSummary" class="lesson-summary">Choose a lesson to begin.</p>
 
-        <div class="card">
-          <h2>Move History</h2>
-          <ol id="moveHistory" class="history"></ol>
+            <div class="lesson-meta">
+              <span id="lessonLevelTag" class="meta-tag">Level</span>
+              <span id="lessonTypeTag" class="meta-tag">Type</span>
+            </div>
+
+            <div id="coachBox" class="coach-box">
+              Welcome to the academy. Pick a lesson from the list.
+            </div>
+
+            <div class="lesson-controls">
+              <button id="prevLessonBtn" class="secondary">Previous</button>
+              <button id="hintBtn">Hint</button>
+              <button id="retryLessonBtn" class="danger">Retry</button>
+              <button id="nextLessonBtn">Next</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Progress</h2>
+            <div id="progressStats" class="progress-stats"></div>
+          </div>
         </div>
       </aside>
     </main>
   </div>
 
-  <!-- REQUIRED: jQuery must load before chessboard.js -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.js"></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
