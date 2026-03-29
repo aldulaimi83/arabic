@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Youooo Chess Academy</title>
+  <title>Youooo Chess Academy V2</title>
 
   <link rel="stylesheet" href="style.css" />
   <link
@@ -16,9 +16,9 @@
     <header class="topbar">
       <div>
         <h1>♟ Youooo Chess Academy</h1>
-        <p class="subtitle">Play, learn, practice, and level up from beginner to expert</p>
+        <p class="subtitle">Play online, train by level, solve puzzles, and improve from beginner to expert</p>
       </div>
-      <div class="badge">Academy V1</div>
+      <div class="badge">Academy V2</div>
     </header>
 
     <div class="tabbar">
@@ -65,6 +65,19 @@
           </div>
 
           <div class="card">
+            <h2>AI Difficulty</h2>
+            <div class="difficulty-grid">
+              <button class="difficulty-btn active-difficulty" data-difficulty="easy">Easy</button>
+              <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+              <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+              <button class="difficulty-btn" data-difficulty="expert">Expert</button>
+            </div>
+            <div id="aiInfo" class="note-box">
+              Easy uses weaker move selection. Medium and above use board evaluation and search.
+            </div>
+          </div>
+
+          <div class="card">
             <h2>Online Room</h2>
             <input id="roomInput" type="text" placeholder="Enter room code" />
             <div class="room-row">
@@ -80,7 +93,7 @@
           <div class="card">
             <h2>How to Use</h2>
             <ul class="help-list">
-              <li><strong>AI:</strong> quick casual practice</li>
+              <li><strong>AI:</strong> practice against different difficulty levels</li>
               <li><strong>2 Players:</strong> play on one device</li>
               <li><strong>Create Room:</strong> make an online room</li>
               <li><strong>Join Room:</strong> enter a friend’s room code</li>
@@ -115,6 +128,7 @@
             <div class="lesson-meta">
               <span id="lessonLevelTag" class="meta-tag">Level</span>
               <span id="lessonTypeTag" class="meta-tag">Type</span>
+              <span id="lessonStarsTag" class="meta-tag">Stars: 0</span>
             </div>
 
             <div id="coachBox" class="coach-box">
@@ -126,6 +140,16 @@
               <button id="hintBtn">Hint</button>
               <button id="retryLessonBtn" class="danger">Retry</button>
               <button id="nextLessonBtn">Next</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Special Training</h2>
+            <div class="controls">
+              <button id="openingTrainerBtn">Opening Trainer</button>
+              <button id="endgameTrainerBtn">Endgame Trainer</button>
+              <button id="dailyChallengeBtn" class="secondary">Daily Challenge</button>
+              <button id="reviewModeBtn" class="danger">Review Current</button>
             </div>
           </div>
 
