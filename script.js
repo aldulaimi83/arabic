@@ -4,16 +4,19 @@ let socket = null;
 let board = null;
 let game = null;
 
-let currentSection = "play"; // play | academy
-let playMode = "local"; // local | ai | online
+let currentSection = "play";
+let playMode = "local";
 let roomId = null;
 let playerColor = "white";
 let isMyTurn = true;
+let aiDifficulty = "easy";
 
 let currentLevel = "beginner";
 let currentLessonId = null;
 let currentLessonStepIndex = 0;
 let lessonCompleted = {};
+let lessonStars = {};
+let lessonHintUsed = false;
 let academyLocked = false;
 
 let statusEl;
@@ -30,8 +33,19 @@ let lessonSummaryEl;
 let coachBoxEl;
 let lessonLevelTagEl;
 let lessonTypeTagEl;
+let lessonStarsTagEl;
 let academyProgressBadgeEl;
 let progressStatsEl;
+let aiInfoEl;
+
+const pieceValues = {
+  p: 100,
+  n: 320,
+  b: 330,
+  r: 500,
+  q: 900,
+  k: 20000
+};
 
 const lessons = [
   {
@@ -217,6 +231,57 @@ const lessons = [
       { by: "coach", from: "g8", to: "h7", note: "The king tries to run." },
       { by: "user", from: "f3", to: "h3", note: "Perfect. Qh3 seals the mating net." }
     ]
+  },
+  {
+    id: "opening-trainer",
+    level: "beginner",
+    type: "trainer",
+    title: "Opening Trainer",
+    summary: "Play healthy opening moves: center, development, king safety.",
+    fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    orientation: "white",
+    coachIntro: "Openings are about center control, development, and king safety.",
+    hints: ["Start with e4 or d4.", "Then develop a knight or bishop."],
+    completionText: "Good opening principles.",
+    expectedMoves: [
+      { by: "user", from: "e2", to: "e4", note: "Nice. Central pawn first." },
+      { by: "coach", from: "e7", to: "e5", note: "Black answers symmetrically." },
+      { by: "user", from: "g1", to: "f3", note: "Good. Develop a knight." },
+      { by: "coach", from: "b8", to: "c6", note: "Black develops too." },
+      { by: "user", from: "f1", to: "c4", note: "Excellent. This is fast development." }
+    ]
+  },
+  {
+    id: "endgame-trainer",
+    level: "advanced",
+    type: "trainer",
+    title: "Basic King and Pawn Endgame",
+    summary: "Use your king actively and escort the pawn forward.",
+    fen: "8/8/8/3k4/8/4K3/4P3/8 w - - 0 1",
+    orientation: "white",
+    coachIntro: "In endgames, the king becomes a fighting piece.",
+    hints: ["Centralize the king.", "Move Kf4 first."],
+    completionText: "Good endgame technique starts with king activity.",
+    expectedMoves: [
+      { by: "user", from: "e3", to: "f4", note: "Good. Bring the king forward." },
+      { by: "coach", from: "d5", to: "e6", note: "Black steps closer." },
+      { by: "user", from: "e2", to: "e4", note: "Nice. Advance the pawn with support." }
+    ]
+  },
+  {
+    id: "daily-challenge",
+    level: "expert",
+    type: "challenge",
+    title: "Daily Challenge",
+    summary: "Find the tactical winning move.",
+    fen: "4k3/8/8/3q4/8/4N3/8/4K2Q w - - 0 1",
+    orientation: "white",
+    coachIntro: "Today's challenge: calculate forcing tactical ideas before moving.",
+    hints: ["Use the knight and queen activity.", "Nd5 is the key move."],
+    completionText: "Nice solve. Daily training sharpens tactical speed.",
+    expectedMoves: [
+      { by: "user", from: "e3", to: "d5", note: "Correct. Nd5 hits key squares and wins tactically." }
+    ]
   }
 ];
 
@@ -226,6 +291,8 @@ function safeSetStatus(text) {
 
 function saveProgress() {
   localStorage.setItem("youooo_chess_academy_progress", JSON.stringify(lessonCompleted));
+  localStorage.setItem("youooo_chess_academy_stars", JSON.stringify(lessonStars));
+  localStorage.setItem("youooo_ai_difficulty", aiDifficulty);
 }
 
 function loadProgress() {
@@ -234,6 +301,12 @@ function loadProgress() {
   } catch (e) {
     lessonCompleted = {};
   }
+  try {
+    lessonStars = JSON.parse(localStorage.getItem("youooo_chess_academy_stars")) || {};
+  } catch (e) {
+    lessonStars = {};
+  }
+  aiDifficulty = localStorage.getItem("youooo_ai_difficulty") || "easy";
 }
 
 function getLessonById(id) {
@@ -246,10 +319,8 @@ function getLessonsByLevel(level) {
 
 function renderMoveHistory() {
   if (!moveHistoryEl || !game) return;
-
   moveHistoryEl.innerHTML = "";
   const history = game.history();
-
   history.forEach((move, i) => {
     const li = document.createElement("li");
     li.textContent = `${i + 1}. ${move}`;
@@ -257,11 +328,23 @@ function renderMoveHistory() {
   });
 }
 
+function updateAIInfo() {
+  const map = {
+    easy: "Easy uses weak move selection and shallow logic.",
+    medium: "Medium uses board evaluation with shallow search.",
+    hard: "Hard searches deeper and avoids many basic blunders.",
+    expert: "Expert is the strongest browser-only version in this site."
+  };
+  if (aiInfoEl) aiInfoEl.textContent = map[aiDifficulty];
+  document.querySelectorAll(".difficulty-btn").forEach((btn) => {
+    btn.classList.toggle("active-difficulty", btn.dataset.difficulty === aiDifficulty);
+  });
+}
+
 function updateStatus() {
   if (!game) return;
 
   let text = "";
-
   if (game.in_checkmate()) {
     text = `Checkmate. ${game.turn() === "w" ? "Black" : "White"} wins.`;
   } else if (game.in_draw()) {
@@ -272,17 +355,15 @@ function updateStatus() {
   }
 
   if (currentSection === "play") {
-    if (playMode === "ai") text += " | Play vs AI";
+    if (playMode === "ai") text += ` | Play vs AI (${capitalize(aiDifficulty)})`;
     if (playMode === "local") text += " | 2 Players";
     if (playMode === "online") {
       text += ` | Online | You are ${playerColor}`;
       text += isMyTurn ? " | Your turn" : " | Opponent turn";
     }
-  } else if (currentSection === "academy") {
+  } else {
     const lesson = getLessonById(currentLessonId);
-    if (lesson) {
-      text += ` | Academy | ${lesson.title}`;
-    }
+    if (lesson) text += ` | Academy | ${lesson.title}`;
   }
 
   safeSetStatus(text);
@@ -300,9 +381,7 @@ function highlightSquares(from, to) {
 }
 
 function applyBoardPosition() {
-  if (board && game) {
-    board.position(game.fen(), true);
-  }
+  if (board && game) board.position(game.fen(), true);
 }
 
 function setCoachMessage(text) {
@@ -311,28 +390,20 @@ function setCoachMessage(text) {
 
 function setCurrentSection(section) {
   currentSection = section;
-
   document.getElementById("playTabBtn").classList.toggle("active", section === "play");
   document.getElementById("academyTabBtn").classList.toggle("active", section === "academy");
-
   playPanel.classList.toggle("active-panel", section === "play");
   academyPanel.classList.toggle("active-panel", section === "academy");
-
   currentSectionLabel.textContent = section === "play" ? "Play Mode" : "Academy Mode";
-
   clearSquareHighlights();
   updateStatus();
 }
 
 function leaveOnlineRoom() {
-  if (socket && roomId) {
-    socket.emit("leave-room", { roomId });
-  }
-
+  if (socket && roomId) socket.emit("leave-room", { roomId });
   roomId = null;
   playerColor = "white";
   isMyTurn = true;
-
   if (roomCodeEl) roomCodeEl.textContent = "None";
 }
 
@@ -398,7 +469,6 @@ function connectSocket() {
     isMyTurn = data.color === "white";
 
     if (roomCodeEl) roomCodeEl.textContent = roomId;
-
     if (!game) game = new Chess();
     game.reset();
 
@@ -419,13 +489,10 @@ function connectSocket() {
     playerColor = data.color;
 
     if (roomCodeEl) roomCodeEl.textContent = roomId;
-
     if (!game) game = new Chess();
     game.reset();
 
-    if (data.fen) {
-      game.load(data.fen);
-    }
+    if (data.fen) game.load(data.fen);
 
     if (board) {
       board.orientation(playerColor === "black" ? "black" : "white");
@@ -433,7 +500,6 @@ function connectSocket() {
     }
 
     isMyTurn = playerColor === "white" ? game.turn() === "w" : game.turn() === "b";
-
     clearSquareHighlights();
     renderMoveHistory();
     updateStatus();
@@ -446,7 +512,6 @@ function connectSocket() {
 
   socket.on("move-played", (data) => {
     if (!game) game = new Chess();
-
     if (data.fen && data.fen !== game.fen()) {
       game.load(data.fen);
       applyBoardPosition();
@@ -459,12 +524,8 @@ function connectSocket() {
 
   socket.on("room-reset", (data) => {
     if (!game) game = new Chess();
-
-    if (data.fen) {
-      game.load(data.fen);
-    } else {
-      game.reset();
-    }
+    if (data.fen) game.load(data.fen);
+    else game.reset();
 
     applyBoardPosition();
     isMyTurn = playerColor === "white";
@@ -473,13 +534,8 @@ function connectSocket() {
     updateStatus();
   });
 
-  socket.on("error-message", (message) => {
-    alert(message);
-  });
-
-  socket.on("opponent-left", () => {
-    safeSetStatus("Opponent left the room.");
-  });
+  socket.on("error-message", (message) => alert(message));
+  socket.on("opponent-left", () => safeSetStatus("Opponent left the room."));
 }
 
 function createRoom() {
@@ -507,22 +563,141 @@ function resetOnlineGame() {
   socket.emit("reset-room", { roomId });
 }
 
+function evaluateBoard(chess) {
+  const boardState = chess.board();
+  let score = 0;
+
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const piece = boardState[row][col];
+      if (!piece) continue;
+      const value = pieceValues[piece.type] || 0;
+      score += piece.color === "w" ? value : -value;
+    }
+  }
+
+  if (chess.in_checkmate()) {
+    return chess.turn() === "w" ? -999999 : 999999;
+  }
+
+  if (chess.in_draw()) return 0;
+
+  return score;
+}
+
+function minimax(chess, depth, alpha, beta, maximizingPlayer) {
+  if (depth === 0 || chess.game_over()) {
+    return evaluateBoard(chess);
+  }
+
+  const moves = chess.moves();
+
+  if (maximizingPlayer) {
+    let maxEval = -Infinity;
+    for (const move of moves) {
+      chess.move(move);
+      const evaluation = minimax(chess, depth - 1, alpha, beta, false);
+      chess.undo();
+      maxEval = Math.max(maxEval, evaluation);
+      alpha = Math.max(alpha, evaluation);
+      if (beta <= alpha) break;
+    }
+    return maxEval;
+  } else {
+    let minEval = Infinity;
+    for (const move of moves) {
+      chess.move(move);
+      const evaluation = minimax(chess, depth - 1, alpha, beta, true);
+      chess.undo();
+      minEval = Math.min(minEval, evaluation);
+      beta = Math.min(beta, evaluation);
+      if (beta <= alpha) break;
+    }
+    return minEval;
+  }
+}
+
+function getBestMove(chess, difficulty) {
+  const moves = chess.moves();
+  if (!moves.length) return null;
+
+  if (difficulty === "easy") {
+    const captures = moves.filter((m) => m.includes("x"));
+    const weakPool = captures.length ? [...captures, ...moves] : moves;
+    return weakPool[Math.floor(Math.random() * weakPool.length)];
+  }
+
+  const depthMap = {
+    medium: 1,
+    hard: 2,
+    expert: 3
+  };
+
+  const depth = depthMap[difficulty] || 1;
+  const maximizing = chess.turn() === "w";
+  let bestMove = null;
+  let bestValue = maximizing ? -Infinity : Infinity;
+
+  for (const move of moves) {
+    chess.move(move);
+    const boardValue = minimax(chess, depth, -Infinity, Infinity, !maximizing);
+    chess.undo();
+
+    if (maximizing) {
+      if (boardValue > bestValue) {
+        bestValue = boardValue;
+        bestMove = move;
+      }
+    } else {
+      if (boardValue < bestValue) {
+        bestValue = boardValue;
+        bestMove = move;
+      }
+    }
+  }
+
+  return bestMove || moves[Math.floor(Math.random() * moves.length)];
+}
+
+function makeAIMove() {
+  if (!game || !board) return;
+  const bestMove = getBestMove(game, aiDifficulty);
+  if (!bestMove) return;
+
+  game.move(bestMove);
+  applyBoardPosition();
+  renderMoveHistory();
+  updateStatus();
+}
+
 function getCurrentLesson() {
   return getLessonById(currentLessonId);
 }
 
+function calculateStars() {
+  if (lessonHintUsed) return 2;
+  return 3;
+}
+
 function markLessonComplete(lessonId) {
   lessonCompleted[lessonId] = true;
+  const stars = calculateStars();
+  lessonStars[lessonId] = Math.max(lessonStars[lessonId] || 0, stars);
   saveProgress();
   renderLessonList();
   renderProgress();
+  updateLessonStars();
+}
+
+function updateLessonStars() {
+  const stars = lessonStars[currentLessonId] || 0;
+  if (lessonStarsTagEl) lessonStarsTagEl.textContent = `Stars: ${stars}`;
 }
 
 function renderProgress() {
   const total = lessons.length;
   const done = lessons.filter((l) => lessonCompleted[l.id]).length;
   const percent = total ? Math.round((done / total) * 100) : 0;
-
   academyProgressBadgeEl.textContent = `${percent}% Complete`;
 
   const levels = ["beginner", "intermediate", "advanced", "expert"];
@@ -531,19 +706,16 @@ function renderProgress() {
   levels.forEach((level) => {
     const levelLessons = lessons.filter((l) => l.level === level);
     const levelDone = levelLessons.filter((l) => lessonCompleted[l.id]).length;
-
     const row = document.createElement("div");
     row.className = "progress-row";
-    row.innerHTML = `
-      <span>${capitalize(level)}</span>
-      <span>${levelDone}/${levelLessons.length} complete</span>
-    `;
+    row.innerHTML = `<span>${capitalize(level)}</span><span>${levelDone}/${levelLessons.length} complete</span>`;
     progressStatsEl.appendChild(row);
   });
 
+  const totalStars = Object.values(lessonStars).reduce((a, b) => a + b, 0);
   const totalRow = document.createElement("div");
   totalRow.className = "progress-row";
-  totalRow.innerHTML = `<strong>Total</strong><strong>${done}/${total}</strong>`;
+  totalRow.innerHTML = `<strong>Total</strong><strong>${done}/${total} lessons • ${totalStars} stars</strong>`;
   progressStatsEl.appendChild(totalRow);
 }
 
@@ -552,6 +724,7 @@ function renderLessonList() {
   lessonListEl.innerHTML = "";
 
   levelLessons.forEach((lesson, index) => {
+    const stars = lessonStars[lesson.id] || 0;
     const item = document.createElement("div");
     item.className = "lesson-item";
     if (lesson.id === currentLessonId) item.classList.add("active-lesson");
@@ -559,13 +732,10 @@ function renderLessonList() {
 
     item.innerHTML = `
       <div class="lesson-item-title">${index + 1}. ${lesson.title}</div>
-      <div class="lesson-item-meta">${capitalize(lesson.type)} • ${lessonCompleted[lesson.id] ? "Completed" : "Not completed"}</div>
+      <div class="lesson-item-meta">${capitalize(lesson.type)} • ${lessonCompleted[lesson.id] ? "Completed" : "Not completed"} • ⭐ ${stars}</div>
     `;
 
-    item.addEventListener("click", () => {
-      loadLesson(lesson.id);
-    });
-
+    item.addEventListener("click", () => loadLesson(lesson.id));
     lessonListEl.appendChild(item);
   });
 }
@@ -577,10 +747,10 @@ function loadLesson(id) {
   leaveOnlineRoom();
   setCurrentSection("academy");
   playMode = "local";
-
   currentLessonId = lesson.id;
   currentLessonStepIndex = 0;
   academyLocked = false;
+  lessonHintUsed = false;
 
   if (!game) game = new Chess(lesson.fen);
   game.load(lesson.fen);
@@ -600,6 +770,7 @@ function loadLesson(id) {
   renderMoveHistory();
   renderLessonList();
   renderProgress();
+  updateLessonStars();
   updateStatus();
 
   const nextStep = lesson.expectedMoves[currentLessonStepIndex];
@@ -646,7 +817,8 @@ function runCoachSteps() {
 function finishLesson(lesson) {
   academyLocked = true;
   markLessonComplete(lesson.id);
-  setCoachMessage(lesson.completionText || "Lesson complete. Great job.");
+  const stars = lessonStars[lesson.id] || 0;
+  setCoachMessage(`${lesson.completionText || "Lesson complete."} You earned ${stars} star${stars === 1 ? "" : "s"}.`);
   safeSetStatus(`Lesson complete: ${lesson.title}`);
 }
 
@@ -670,10 +842,7 @@ function handleAcademyMove(source, target) {
 
   if (attemptedMove === null) return "snapback";
 
-  const correct =
-    source === step.from &&
-    target === step.to &&
-    ((step.promotion || "q") === "q" || !step.promotion || step.promotion === "q");
+  const correct = source === step.from && target === step.to;
 
   if (!correct) {
     game.undo();
@@ -710,6 +879,8 @@ function showHint() {
     return;
   }
 
+  lessonHintUsed = true;
+
   if (step.by === "user") {
     highlightSquares(step.from, step.to);
     setCoachMessage(lesson.hints?.[0] || `Try ${step.from} to ${step.to}.`);
@@ -726,7 +897,6 @@ function goToAdjacentLesson(direction) {
   if (index === -1) index = 0;
 
   index += direction;
-
   if (index < 0) index = 0;
   if (index >= levelLessons.length) index = levelLessons.length - 1;
 
@@ -735,7 +905,6 @@ function goToAdjacentLesson(direction) {
 
 function setLevel(level) {
   currentLevel = level;
-
   document.querySelectorAll(".level-btn").forEach((btn) => {
     btn.classList.toggle("active-level", btn.dataset.level === level);
   });
@@ -743,12 +912,20 @@ function setLevel(level) {
   const levelLessons = getLessonsByLevel(level);
   const fallbackLesson = levelLessons[0]?.id || null;
 
-  if (!currentLessonId || !getLessonsByLevel(level).some((l) => l.id === currentLessonId)) {
+  if (!currentLessonId || !levelLessons.some((l) => l.id === currentLessonId)) {
     currentLessonId = fallbackLesson;
   }
 
   renderLessonList();
   if (currentLessonId) loadLesson(currentLessonId);
+}
+
+function loadSpecialLesson(id) {
+  currentLevel = getLessonById(id).level;
+  document.querySelectorAll(".level-btn").forEach((btn) => {
+    btn.classList.toggle("active-level", btn.dataset.level === currentLevel);
+  });
+  loadLesson(id);
 }
 
 function capitalize(value) {
@@ -775,7 +952,6 @@ function onDragStart(source, piece) {
   if (currentSection === "academy") {
     const lesson = getCurrentLesson();
     if (!lesson || academyLocked) return false;
-
     const step = lesson.expectedMoves[currentLessonStepIndex];
     if (!step || step.by !== "user") return false;
   }
@@ -804,7 +980,7 @@ function onDrop(source, target) {
   updateStatus();
 
   if (playMode === "ai" && !game.game_over()) {
-    setTimeout(makeAIMove, 300);
+    setTimeout(makeAIMove, 250);
   }
 
   if (playMode === "online" && socket && roomId) {
@@ -825,22 +1001,8 @@ function onSnapEnd() {
   applyBoardPosition();
 }
 
-function makeAIMove() {
-  if (!game || !board) return;
-
-  const moves = game.moves();
-  if (!moves.length) return;
-
-  const randomMove = moves[Math.floor(Math.random() * moves.length)];
-  game.move(randomMove);
-  applyBoardPosition();
-  renderMoveHistory();
-  updateStatus();
-}
-
 function initBoard() {
   const boardElement = document.getElementById("board");
-
   if (!boardElement) {
     safeSetStatus("Error: board element not found");
     return;
@@ -867,9 +1029,9 @@ function initBoard() {
     draggable: true,
     position: "start",
     pieceTheme: "https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png",
-    onDragStart: onDragStart,
-    onDrop: onDrop,
-    onSnapEnd: onSnapEnd
+    onDragStart,
+    onDrop,
+    onSnapEnd
   });
 
   renderMoveHistory();
@@ -879,7 +1041,6 @@ function initBoard() {
 function bindEvents() {
   document.getElementById("playTabBtn")?.addEventListener("click", () => {
     setCurrentSection("play");
-    if (!game || currentSection !== "play") return;
     clearSquareHighlights();
     updateStatus();
   });
@@ -901,13 +1062,9 @@ function bindEvents() {
   document.getElementById("flipBtn")?.addEventListener("click", flipBoard);
 
   document.getElementById("resetBtn")?.addEventListener("click", () => {
-    if (currentSection === "academy") {
-      retryCurrentLesson();
-    } else if (playMode === "online") {
-      resetOnlineGame();
-    } else {
-      resetGameLocal();
-    }
+    if (currentSection === "academy") retryCurrentLesson();
+    else if (playMode === "online") resetOnlineGame();
+    else resetGameLocal();
   });
 
   document.getElementById("hintBtn")?.addEventListener("click", showHint);
@@ -917,6 +1074,33 @@ function bindEvents() {
 
   document.querySelectorAll(".level-btn").forEach((btn) => {
     btn.addEventListener("click", () => setLevel(btn.dataset.level));
+  });
+
+  document.querySelectorAll(".difficulty-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      aiDifficulty = btn.dataset.difficulty;
+      updateAIInfo();
+      saveProgress();
+      updateStatus();
+    });
+  });
+
+  document.getElementById("openingTrainerBtn")?.addEventListener("click", () => loadSpecialLesson("opening-trainer"));
+  document.getElementById("endgameTrainerBtn")?.addEventListener("click", () => loadSpecialLesson("endgame-trainer"));
+  document.getElementById("dailyChallengeBtn")?.addEventListener("click", () => loadSpecialLesson("daily-challenge"));
+  document.getElementById("reviewModeBtn")?.addEventListener("click", () => {
+    const lesson = getCurrentLesson();
+    if (!lesson) {
+      setCoachMessage("Open a lesson first.");
+      return;
+    }
+    const step = lesson.expectedMoves[currentLessonStepIndex];
+    if (!step) {
+      setCoachMessage("This lesson is already completed.");
+      return;
+    }
+    setCoachMessage(`Review: the next correct move is ${step.from} to ${step.to}.`);
+    highlightSquares(step.from, step.to);
   });
 }
 
@@ -940,8 +1124,10 @@ document.addEventListener("DOMContentLoaded", () => {
   coachBoxEl = document.getElementById("coachBox");
   lessonLevelTagEl = document.getElementById("lessonLevelTag");
   lessonTypeTagEl = document.getElementById("lessonTypeTag");
+  lessonStarsTagEl = document.getElementById("lessonStarsTag");
   academyProgressBadgeEl = document.getElementById("academyProgressBadge");
   progressStatsEl = document.getElementById("progressStats");
+  aiInfoEl = document.getElementById("aiInfo");
 
   loadProgress();
   bindEvents();
@@ -950,5 +1136,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderProgress();
   setCurrentSection("play");
   startLocal();
+  updateAIInfo();
   setLevel("beginner");
 });
