@@ -1,1626 +1,1124 @@
-const SERVER_URL = "https://youooo-chess-backend.onrender.com";
+/* ════════════════════════════════════════════════════════════
+   YOUOOO GAMES — Hub Script
+   Games: Chess · Checkers (+ Online) · Snake & Ladders · Dominoes
+   ════════════════════════════════════════════════════════════ */
 
-/* =========================
-   GLOBAL STATE
-========================= */
-let currentGame = "chess"; // chess | checkers
-let currentSection = "play"; // play | academy
+'use strict';
 
-/* =========================
-   CHESS STATE
-========================= */
-let socket = null;
-let board = null;
-let game = null;
+// ── FIREBASE ─────────────────────────────────────────────────
+const db = firebase.database();
 
-let playMode = "local";
-let roomId = null;
-let playerColor = "white";
-let isMyTurn = true;
-let aiDifficulty = "easy";
-
-const pieceValues = {
-  p: 100,
-  n: 320,
-  b: 330,
-  r: 500,
-  q: 900,
-  k: 20000
-};
-
-let currentLevel = "beginner";
-let currentLessonId = null;
-let currentLessonStepIndex = 0;
-let lessonCompleted = {};
-let lessonStars = {};
-let lessonHintUsed = false;
-let academyLocked = false;
-
-/* =========================
-   CHECKERS STATE
-========================= */
-let checkersMode = "local"; // local | ai
-let checkersDifficulty = "easy";
-let checkersBoardState = [];
-let checkersCurrentPlayer = "red";
-let selectedChecker = null;
-let validMoves = [];
-let pendingCheckerAi = null;
-
-/* =========================
-   DOM
-========================= */
-let statusEl;
-let roomInput;
-let roomCodeEl;
-let moveHistoryEl;
-let serverStateEl;
-let playPanel;
-let academyPanel;
-let currentSectionLabel;
-let lessonListEl;
-let lessonTitleEl;
-let lessonSummaryEl;
-let coachBoxEl;
-let lessonLevelTagEl;
-let lessonTypeTagEl;
-let lessonStarsTagEl;
-let academyProgressBadgeEl;
-let progressStatsEl;
-let aiInfoEl;
-let checkersAiInfoEl;
-
-/* =========================
-   LESSONS
-========================= */
-const lessons = [
-  {
-    id: "rook-lines",
-    level: "beginner",
-    type: "lesson",
-    title: "Rook Moves in Straight Lines",
-    summary: "A rook moves horizontally or vertically. Move the rook from a1 to a8.",
-    fen: "8/8/8/8/8/8/8/R3K3 w - - 0 1",
-    orientation: "white",
-    coachIntro: "The rook is strongest on open files and ranks. It cannot move diagonally.",
-    hints: ["Look straight up the board.", "Move the rook from a1 to a8."],
-    completionText: "Great. You moved the rook in a straight line.",
-    expectedMoves: [{ by: "user", from: "a1", to: "a8", note: "Exactly. Rooks travel in straight lines." }]
-  },
-  {
-    id: "bishop-diagonal",
-    level: "beginner",
-    type: "lesson",
-    title: "Bishop Moves Diagonally",
-    summary: "A bishop moves on diagonals only. Move the bishop from c1 to h6.",
-    fen: "8/8/8/8/8/8/8/2B1K3 w - - 0 1",
-    orientation: "white",
-    coachIntro: "Bishops stay on the same color squares for the entire game.",
-    hints: ["Trace the diagonal from c1.", "The target square is h6."],
-    completionText: "Nice. You used the bishop correctly on a diagonal.",
-    expectedMoves: [{ by: "user", from: "c1", to: "h6", note: "Correct. Bishops slide diagonally." }]
-  },
-  {
-    id: "knight-jump",
-    level: "beginner",
-    type: "lesson",
-    title: "Knight Jumps in an L Shape",
-    summary: "Knights move in an L shape and can jump over pieces. Move the knight from d4 to f5.",
-    fen: "8/8/8/8/3N4/8/8/4K3 w - - 0 1",
-    orientation: "white",
-    coachIntro: "Knights move two squares one way and one square the other way.",
-    hints: ["Think: two and one.", "From d4 the target is f5."],
-    completionText: "Perfect. Knights are tricky because they jump.",
-    expectedMoves: [{ by: "user", from: "d4", to: "f5", note: "Correct. The knight jumped in an L shape." }]
-  },
-  {
-    id: "castle-king-safety",
-    level: "beginner",
-    type: "lesson",
-    title: "Castling for King Safety",
-    summary: "Castle kingside to bring the king to safety and connect your rook.",
-    fen: "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
-    orientation: "white",
-    coachIntro: "Castling is one of the most important opening habits for king safety.",
-    hints: ["Move the king two squares toward the rook.", "White castles kingside by moving king e1 to g1."],
-    completionText: "Well done. Castling keeps your king safer.",
-    expectedMoves: [{ by: "user", from: "e1", to: "g1", note: "Good. That is kingside castling." }]
-  },
-  {
-    id: "mate-in-one",
-    level: "beginner",
-    type: "puzzle",
-    title: "Checkmate in One",
-    summary: "Find the move that gives immediate checkmate.",
-    fen: "6k1/5ppp/8/8/8/8/5PPP/6RK w - - 0 1",
-    orientation: "white",
-    coachIntro: "Look for forcing moves. Checks are the first thing to consider in tactics.",
-    hints: ["Use the rook on g1.", "Move the rook to e1 for mate."],
-    completionText: "Excellent. You found a simple mating net.",
-    expectedMoves: [{ by: "user", from: "g1", to: "e1", note: "Correct. Re1# is checkmate." }]
-  },
-  {
-    id: "fork-tactic",
-    level: "intermediate",
-    type: "puzzle",
-    title: "Knight Fork",
-    summary: "Use the knight to attack two important pieces at once.",
-    fen: "4k3/8/8/3q4/8/2N5/8/4K3 w - - 0 1",
-    orientation: "white",
-    coachIntro: "Forks win material by attacking more than one target at the same time.",
-    hints: ["The knight can check the king and hit the queen.", "Try b5+."],
-    completionText: "Great tactical vision. Forks are powerful beginner-intermediate weapons.",
-    expectedMoves: [{ by: "user", from: "c3", to: "b5", note: "Exactly. Nb5+ forks the king and queen." }]
-  },
-  {
-    id: "pin-tactic",
-    level: "intermediate",
-    type: "puzzle",
-    title: "Use a Pin",
-    summary: "Pin the knight to the king with your bishop.",
-    fen: "4k3/8/8/8/8/5n2/4b3/4K2B w - - 0 1",
-    orientation: "white",
-    coachIntro: "Pinned pieces often cannot move because they would expose something more valuable behind them.",
-    hints: ["Your bishop on h1 can attack the king's diagonal.", "Move bishop to c6."],
-    completionText: "Nice. A pin can completely freeze a defender.",
-    expectedMoves: [{ by: "user", from: "h1", to: "c6", note: "Correct. The knight is pinned to the king." }]
-  },
-  {
-    id: "opening-center",
-    level: "intermediate",
-    type: "lesson",
-    title: "Fight for the Center",
-    summary: "Play a strong central opening move.",
-    fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    orientation: "white",
-    coachIntro: "In the opening, control the center, develop pieces, and protect your king.",
-    hints: ["Push a central pawn two squares.", "e4 is the classical choice here."],
-    completionText: "Good start. Central space helps all your pieces.",
-    expectedMoves: [
-      { by: "user", from: "e2", to: "e4", note: "Correct. e4 claims central space." },
-      { by: "coach", from: "e7", to: "e5", note: "Black responds in the center too." },
-      { by: "user", from: "g1", to: "f3", note: "Excellent. Develop a knight and attack e5." }
-    ]
-  },
-  {
-    id: "remove-defender",
-    level: "advanced",
-    type: "puzzle",
-    title: "Remove the Defender",
-    summary: "Eliminate the defender first, then win the target.",
-    fen: "4k3/8/8/8/4q3/8/4R3/4K2Q w - - 0 1",
-    orientation: "white",
-    coachIntro: "Many advanced tactics start by removing the one piece that protects everything.",
-    hints: ["Your rook can capture the queen.", "Play Rxe4+."],
-    completionText: "Excellent. Removing the defender is a classic tactical idea.",
-    expectedMoves: [{ by: "user", from: "e2", to: "e4", note: "Correct. You removed the strongest defender immediately." }]
-  },
-  {
-    id: "back-rank",
-    level: "advanced",
-    type: "puzzle",
-    title: "Back Rank Mate",
-    summary: "Use the weak back rank to checkmate.",
-    fen: "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",
-    orientation: "white",
-    coachIntro: "If the king has no escape squares and the pawns trap it, heavy pieces become deadly.",
-    hints: ["Use the rook on d1.", "Rd8+ is the winning move."],
-    completionText: "Correct. Back-rank weaknesses decide many practical games.",
-    expectedMoves: [{ by: "user", from: "d1", to: "d8", note: "Beautiful. Rd8# finishes the game." }]
-  },
-  {
-    id: "queen-sac-mate",
-    level: "expert",
-    type: "puzzle",
-    title: "Queen Sacrifice Pattern",
-    summary: "A forcing attack sometimes requires a sacrifice. Find the first move.",
-    fen: "6k1/5ppp/8/8/8/5Q2/5PPP/6K1 w - - 0 1",
-    orientation: "white",
-    coachIntro: "Expert players calculate forcing lines with checks, captures, and threats.",
-    hints: ["Start with a checking move.", "Qa8+ is the move."],
-    completionText: "Strong pattern recognition. Forcing lines are everything in tactical attacks.",
-    expectedMoves: [{ by: "user", from: "f3", to: "a8", note: "Correct. A forcing queen check starts the sequence." }]
-  },
-  {
-    id: "mate-net-sequence",
-    level: "expert",
-    type: "lesson",
-    title: "Build a Mate Net",
-    summary: "Play the forcing sequence to trap the king.",
-    fen: "6k1/5ppp/8/8/8/5Q2/5PPP/4R1K1 w - - 0 1",
-    orientation: "white",
-    coachIntro: "When you attack, coordinate your pieces so every escape square disappears.",
-    hints: ["Start with Re8+.", "Then use your queen if needed to finish the net."],
-    completionText: "Excellent. You coordinated rook and queen to trap the king.",
-    expectedMoves: [
-      { by: "user", from: "e1", to: "e8", note: "Nice. Force the king to react." },
-      { by: "coach", from: "g8", to: "h7", note: "The king tries to run." },
-      { by: "user", from: "f3", to: "h3", note: "Perfect. Qh3 seals the mating net." }
-    ]
-  },
-  {
-    id: "opening-trainer",
-    level: "beginner",
-    type: "trainer",
-    title: "Opening Trainer",
-    summary: "Play healthy opening moves: center, development, king safety.",
-    fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    orientation: "white",
-    coachIntro: "Openings are about center control, development, and king safety.",
-    hints: ["Start with e4 or d4.", "Then develop a knight or bishop."],
-    completionText: "Good opening principles.",
-    expectedMoves: [
-      { by: "user", from: "e2", to: "e4", note: "Nice. Central pawn first." },
-      { by: "coach", from: "e7", to: "e5", note: "Black answers symmetrically." },
-      { by: "user", from: "g1", to: "f3", note: "Good. Develop a knight." },
-      { by: "coach", from: "b8", to: "c6", note: "Black develops too." },
-      { by: "user", from: "f1", to: "c4", note: "Excellent. This is fast development." }
-    ]
-  },
-  {
-    id: "endgame-trainer",
-    level: "advanced",
-    type: "trainer",
-    title: "Basic King and Pawn Endgame",
-    summary: "Use your king actively and escort the pawn forward.",
-    fen: "8/8/8/3k4/8/4K3/4P3/8 w - - 0 1",
-    orientation: "white",
-    coachIntro: "In endgames, the king becomes a fighting piece.",
-    hints: ["Centralize the king.", "Move Kf4 first."],
-    completionText: "Good endgame technique starts with king activity.",
-    expectedMoves: [
-      { by: "user", from: "e3", to: "f4", note: "Good. Bring the king forward." },
-      { by: "coach", from: "d5", to: "e6", note: "Black steps closer." },
-      { by: "user", from: "e2", to: "e4", note: "Nice. Advance the pawn with support." }
-    ]
-  },
-  {
-    id: "daily-challenge",
-    level: "expert",
-    type: "challenge",
-    title: "Daily Challenge",
-    summary: "Find the tactical winning move.",
-    fen: "4k3/8/8/3q4/8/4N3/8/4K2Q w - - 0 1",
-    orientation: "white",
-    coachIntro: "Today's challenge: calculate forcing tactical ideas before moving.",
-    hints: ["Use the knight and queen activity.", "Nd5 is the key move."],
-    completionText: "Nice solve. Daily training sharpens tactical speed.",
-    expectedMoves: [{ by: "user", from: "e3", to: "d5", note: "Correct. Nd5 hits key squares and wins tactically." }]
-  }
-];
-
-/* =========================
-   GENERAL HELPERS
-========================= */
-function safeSetStatus(text) {
-  if (statusEl) statusEl.textContent = text;
+function getPlayerId() {
+  let id = localStorage.getItem('youooo_pid');
+  if (!id) { id = Math.random().toString(36).slice(2, 10); localStorage.setItem('youooo_pid', id); }
+  return id;
 }
 
-function capitalize(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+function genRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
 }
 
-function setCurrentSection(section) {
-  currentSection = section;
-  document.getElementById("playTabBtn").classList.toggle("active", section === "play");
-  document.getElementById("academyTabBtn").classList.toggle("active", section === "academy");
-  playPanel.classList.toggle("active-panel", section === "play");
-  academyPanel.classList.toggle("active-panel", section === "academy");
-  updateVisibleControls();
-  updateSectionLabel();
-  updateStatus();
+// ── HUB NAVIGATION ───────────────────────────────────────────
+document.querySelectorAll('.game-card').forEach(card => {
+  card.addEventListener('click', () => showView(card.dataset.game));
+});
+
+document.querySelectorAll('.back-btn').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.target));
+});
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'chess')     initChessView();
+  if (name === 'checkers')  initCheckersView();
+  if (name === 'snake')     initSnakeView();
+  if (name === 'domino')    {/* domino inits on button click */}
 }
 
-function setCurrentGame(gameName) {
-  currentGame = gameName;
-  document.getElementById("chessGameBtn").classList.toggle("active-game", gameName === "chess");
-  document.getElementById("checkersGameBtn").classList.toggle("active-game", gameName === "checkers");
+// ════════════════════════════════════════════════════════════
+// ██████  CHESS
+// ════════════════════════════════════════════════════════════
+let chessGame = null, chessBoard = null;
+let chessMode = 'ai', chessDiff = 'medium';
+let chessOnlineColor = 'w', chessRoomCode = null, chessOnlineRef = null;
+const CVALS = {p:100,n:320,b:330,r:500,q:900,k:20000};
 
-  document.getElementById("chessBoardWrap").classList.toggle("hidden", gameName !== "chess");
-  document.getElementById("checkersBoardWrap").classList.toggle("hidden", gameName !== "checkers");
-
-  updateVisibleControls();
-  updateSectionLabel();
-  updateStatus();
-  renderMoveHistory();
-
-  if (gameName === "checkers") {
-    renderCheckersBoard();
-  } else {
-    clearSquareHighlights();
-    if (board && window.dispatchEvent) {
-      setTimeout(() => {
-        try { board.resize(); } catch (e) {}
-      }, 50);
-    }
-  }
-}
-
-function updateVisibleControls() {
-  document.getElementById("chessPlayControls").classList.toggle("hidden", !(currentGame === "chess" && currentSection === "play"));
-  document.getElementById("checkersPlayControls").classList.toggle("hidden", !(currentGame === "checkers" && currentSection === "play"));
-  document.getElementById("chessAcademyControls").classList.toggle("hidden", !(currentGame === "chess" && currentSection === "academy"));
-  document.getElementById("checkersAcademyControls").classList.toggle("hidden", !(currentGame === "checkers" && currentSection === "academy"));
-}
-
-function updateSectionLabel() {
-  const gameName = currentGame === "chess" ? "Chess" : "Checkers";
-  const sectionName = currentSection === "play" ? "Play Mode" : "Academy Mode";
-  currentSectionLabel.textContent = `${gameName} • ${sectionName}`;
-}
-
-/* =========================
-   CHESS PROGRESS
-========================= */
-function saveProgress() {
-  localStorage.setItem("youooo_chess_academy_progress", JSON.stringify(lessonCompleted));
-  localStorage.setItem("youooo_chess_academy_stars", JSON.stringify(lessonStars));
-  localStorage.setItem("youooo_ai_difficulty", aiDifficulty);
-  localStorage.setItem("youooo_checkers_ai_difficulty", checkersDifficulty);
-}
-
-function loadProgress() {
-  try {
-    lessonCompleted = JSON.parse(localStorage.getItem("youooo_chess_academy_progress")) || {};
-  } catch (e) {
-    lessonCompleted = {};
-  }
-
-  try {
-    lessonStars = JSON.parse(localStorage.getItem("youooo_chess_academy_stars")) || {};
-  } catch (e) {
-    lessonStars = {};
-  }
-
-  aiDifficulty = localStorage.getItem("youooo_ai_difficulty") || "easy";
-  checkersDifficulty = localStorage.getItem("youooo_checkers_ai_difficulty") || "easy";
-}
-
-function getLessonById(id) {
-  return lessons.find((lesson) => lesson.id === id);
-}
-
-function getLessonsByLevel(level) {
-  return lessons.filter((lesson) => lesson.level === level);
-}
-
-/* =========================
-   CHESS HISTORY / STATUS
-========================= */
-function renderMoveHistory() {
-  if (!moveHistoryEl) return;
-  moveHistoryEl.innerHTML = "";
-
-  if (currentGame === "chess") {
-    if (!game) return;
-    const history = game.history();
-    history.forEach((move, i) => {
-      const li = document.createElement("li");
-      li.textContent = `${i + 1}. ${move}`;
-      moveHistoryEl.appendChild(li);
-    });
-    return;
-  }
-
-  const history = checkersBoardState._history || [];
-  history.forEach((move, i) => {
-    const li = document.createElement("li");
-    li.textContent = `${i + 1}. ${move}`;
-    moveHistoryEl.appendChild(li);
+function initChessView() {
+  if (chessBoard) { chessBoard.destroy(); chessBoard = null; }
+  chessGame = new Chess();
+  const size = Math.min(520, window.innerWidth - (window.innerWidth > 860 ? 340 : 32));
+  chessBoard = Chessboard('chessboard', {
+    draggable: true, position: 'start',
+    pieceTheme: 'https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/img/chesspieces/wikipedia/{piece}.png',
+    onDragStart: chOnDragStart, onDrop: chOnDrop,
+    onSnapEnd: () => chessBoard.position(chessGame.fen()),
   });
+  $('#chessboard').css('width', size + 'px'); chessBoard.resize();
+  updateChessStatus(); clearChessMoveHistory();
+  document.getElementById('chessDiffCard').style.display = '';
 }
 
-function updateAIInfo() {
-  const map = {
-    easy: "Easy uses weak move selection and shallow logic.",
-    medium: "Medium uses board evaluation with shallow search.",
-    hard: "Hard searches deeper and avoids many basic blunders.",
-    expert: "Expert is the strongest browser-only version in this site."
-  };
-  if (aiInfoEl) aiInfoEl.textContent = map[aiDifficulty];
-  document.querySelectorAll(".difficulty-btn").forEach((btn) => {
-    btn.classList.toggle("active-difficulty", btn.dataset.difficulty === aiDifficulty);
-  });
-}
-
-function updateCheckersAIInfo() {
-  const map = {
-    easy: "Easy picks weaker moves often.",
-    medium: "Medium prefers captures and promotion chances.",
-    hard: "Hard values stronger captures and kings more.",
-    expert: "Expert uses a stronger board evaluation in V1."
-  };
-  if (checkersAiInfoEl) checkersAiInfoEl.textContent = map[checkersDifficulty];
-  document.querySelectorAll(".checkers-difficulty-btn").forEach((btn) => {
-    btn.classList.toggle("active-difficulty", btn.dataset.difficulty === checkersDifficulty);
-  });
-}
-
-function updateStatus() {
-  if (currentGame === "checkers") {
-    updateCheckersStatus();
-    return;
-  }
-
-  if (!game) return;
-  let text = "";
-
-  if (game.in_checkmate()) {
-    text = `Checkmate. ${game.turn() === "w" ? "Black" : "White"} wins.`;
-  } else if (game.in_draw()) {
-    text = "Draw.";
-  } else {
-    text = `${game.turn() === "w" ? "White" : "Black"} to move`;
-    if (game.in_check()) text += " — Check!";
-  }
-
-  if (currentSection === "play") {
-    if (playMode === "ai") text += ` | Play vs AI (${capitalize(aiDifficulty)})`;
-    if (playMode === "local") text += " | 2 Players";
-    if (playMode === "online") {
-      text += ` | Online | You are ${playerColor}`;
-      text += isMyTurn ? " | Your turn" : " | Opponent turn";
-    }
-  } else {
-    const lesson = getLessonById(currentLessonId);
-    if (lesson) text += ` | Academy | ${lesson.title}`;
-  }
-
-  safeSetStatus(text);
-}
-
-function updateCheckersStatus() {
-  const side = checkersCurrentPlayer === "red" ? "Red" : "Black";
-  let text = `${side} to move`;
-
-  if (currentSection === "play") {
-    if (checkersMode === "ai") text += ` | Play vs AI (${capitalize(checkersDifficulty)})`;
-    else text += " | 2 Players";
-  } else {
-    text += " | Checkers Academy coming in V2";
-  }
-
-  const redCount = countCheckersPieces("red");
-  const blackCount = countCheckersPieces("black");
-
-  if (redCount === 0) text = "Black wins.";
-  if (blackCount === 0) text = "Red wins.";
-
-  safeSetStatus(text);
-}
-
-/* =========================
-   CHESS VISUAL HELPERS
-========================= */
-function clearSquareHighlights() {
-  if (typeof $ === "undefined") return;
-  $("#board .square-55d63").removeClass("square-hint square-target");
-}
-
-function highlightSquares(from, to) {
-  clearSquareHighlights();
-  if (from) $(`#board .square-${from}`).addClass("square-hint");
-  if (to) $(`#board .square-${to}`).addClass("square-target");
-}
-
-function applyBoardPosition() {
-  if (board && game) board.position(game.fen(), true);
-}
-
-function setCoachMessage(text) {
-  if (coachBoxEl) coachBoxEl.textContent = text;
-}
-
-/* =========================
-   CHESS ONLINE
-========================= */
-function leaveOnlineRoom() {
-  if (socket && roomId) socket.emit("leave-room", { roomId });
-  roomId = null;
-  playerColor = "white";
-  isMyTurn = true;
-  if (roomCodeEl) roomCodeEl.textContent = "None";
-}
-
-function resetGameLocal() {
-  if (!game) game = new Chess();
-  game.reset();
-
-  if (board) {
-    board.orientation("white");
-    board.position("start", true);
-  }
-
-  isMyTurn = true;
-  renderMoveHistory();
-  clearSquareHighlights();
-  updateStatus();
-}
-
-function startAI() {
-  if (currentGame === "checkers") {
-    startCheckersAI();
-    return;
-  }
-  leaveOnlineRoom();
-  playMode = "ai";
-  setCurrentSection("play");
-  setCurrentGame("chess");
-  resetGameLocal();
-}
-
-function startLocal() {
-  if (currentGame === "checkers") {
-    startCheckersLocal();
-    return;
-  }
-  leaveOnlineRoom();
-  playMode = "local";
-  setCurrentSection("play");
-  setCurrentGame("chess");
-  resetGameLocal();
-}
-
-function flipBoard() {
-  if (currentGame === "chess") {
-    if (board) board.flip();
-  } else {
-    checkersBoardState._flipped = !checkersBoardState._flipped;
-    renderCheckersBoard();
-  }
-}
-
-function randomRoomCode() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
-}
-
-function connectSocket() {
-  if (socket) return;
-
-  socket = io(SERVER_URL, {
-    transports: ["websocket", "polling"]
-  });
-
-  socket.on("connect", () => {
-    if (serverStateEl) serverStateEl.textContent = "Connected";
-  });
-
-  socket.on("disconnect", () => {
-    if (serverStateEl) serverStateEl.textContent = "Disconnected";
-  });
-
-  socket.on("room-created", (data) => {
-    setCurrentSection("play");
-    setCurrentGame("chess");
-    playMode = "online";
-    roomId = data.roomId;
-    playerColor = data.color;
-    isMyTurn = data.color === "white";
-
-    if (roomCodeEl) roomCodeEl.textContent = roomId;
-    if (!game) game = new Chess();
-    game.reset();
-
-    if (board) {
-      board.orientation("white");
-      board.position("start", true);
-    }
-
-    clearSquareHighlights();
-    renderMoveHistory();
-    updateStatus();
-  });
-
-  socket.on("room-joined", (data) => {
-    setCurrentSection("play");
-    setCurrentGame("chess");
-    playMode = "online";
-    roomId = data.roomId;
-    playerColor = data.color;
-
-    if (roomCodeEl) roomCodeEl.textContent = roomId;
-    if (!game) game = new Chess();
-    game.reset();
-
-    if (data.fen) game.load(data.fen);
-
-    if (board) {
-      board.orientation(playerColor === "black" ? "black" : "white");
-      applyBoardPosition();
-    }
-
-    isMyTurn = playerColor === "white" ? game.turn() === "w" : game.turn() === "b";
-    clearSquareHighlights();
-    renderMoveHistory();
-    updateStatus();
-  });
-
-  socket.on("opponent-joined", () => {
-    setCoachMessage("Your online opponent joined the room.");
-    updateStatus();
-  });
-
-  socket.on("move-played", (data) => {
-    if (!game) game = new Chess();
-    if (data.fen && data.fen !== game.fen()) {
-      game.load(data.fen);
-      applyBoardPosition();
-      isMyTurn = true;
-      clearSquareHighlights();
-      renderMoveHistory();
-      updateStatus();
-    }
-  });
-
-  socket.on("room-reset", (data) => {
-    if (!game) game = new Chess();
-    if (data.fen) game.load(data.fen);
-    else game.reset();
-
-    applyBoardPosition();
-    isMyTurn = playerColor === "white";
-    clearSquareHighlights();
-    renderMoveHistory();
-    updateStatus();
-  });
-
-  socket.on("error-message", (message) => alert(message));
-  socket.on("opponent-left", () => safeSetStatus("Opponent left the room."));
-}
-
-function createRoom() {
-  if (currentGame !== "chess") {
-    alert("Checkers online mode will come in V2.");
-    return;
-  }
-  setCurrentSection("play");
-  setCurrentGame("chess");
-  connectSocket();
-  const newRoomId = randomRoomCode();
-  socket.emit("create-room", { roomId: newRoomId });
-}
-
-function joinRoom() {
-  if (currentGame !== "chess") {
-    alert("Checkers online mode will come in V2.");
-    return;
-  }
-  setCurrentSection("play");
-  setCurrentGame("chess");
-  connectSocket();
-
-  const enteredRoom = roomInput.value.trim().toUpperCase();
-  if (!enteredRoom) {
-    alert("Enter a room code first.");
-    return;
-  }
-
-  socket.emit("join-room", { roomId: enteredRoom });
-}
-
-function resetOnlineGame() {
-  if (!socket || !roomId) return;
-  socket.emit("reset-room", { roomId });
-}
-
-/* =========================
-   CHESS AI
-========================= */
-function evaluateBoard(chess) {
-  const boardState = chess.board();
-  let score = 0;
-
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      const piece = boardState[row][col];
-      if (!piece) continue;
-      const value = pieceValues[piece.type] || 0;
-      score += piece.color === "w" ? value : -value;
-    }
-  }
-
-  if (chess.in_checkmate()) return chess.turn() === "w" ? -999999 : 999999;
-  if (chess.in_draw()) return 0;
-
-  return score;
-}
-
-function minimax(chess, depth, alpha, beta, maximizingPlayer) {
-  if (depth === 0 || chess.game_over()) {
-    return evaluateBoard(chess);
-  }
-
-  const moves = chess.moves();
-
-  if (maximizingPlayer) {
-    let maxEval = -Infinity;
-    for (const move of moves) {
-      chess.move(move);
-      const evaluation = minimax(chess, depth - 1, alpha, beta, false);
-      chess.undo();
-      maxEval = Math.max(maxEval, evaluation);
-      alpha = Math.max(alpha, evaluation);
-      if (beta <= alpha) break;
-    }
-    return maxEval;
-  } else {
-    let minEval = Infinity;
-    for (const move of moves) {
-      chess.move(move);
-      const evaluation = minimax(chess, depth - 1, alpha, beta, true);
-      chess.undo();
-      minEval = Math.min(minEval, evaluation);
-      beta = Math.min(beta, evaluation);
-      if (beta <= alpha) break;
-    }
-    return minEval;
-  }
-}
-
-function getBestMove(chess, difficulty) {
-  const moves = chess.moves();
-  if (!moves.length) return null;
-
-  if (difficulty === "easy") {
-    const weakPool = moves;
-    return weakPool[Math.floor(Math.random() * weakPool.length)];
-  }
-
-  const depthMap = { medium: 1, hard: 2, expert: 3 };
-  const depth = depthMap[difficulty] || 1;
-  const maximizing = chess.turn() === "w";
-  let bestMove = null;
-  let bestValue = maximizing ? -Infinity : Infinity;
-
-  for (const move of moves) {
-    chess.move(move);
-    const boardValue = minimax(chess, depth, -Infinity, Infinity, !maximizing);
-    chess.undo();
-
-    if (maximizing) {
-      if (boardValue > bestValue) {
-        bestValue = boardValue;
-        bestMove = move;
-      }
-    } else {
-      if (boardValue < bestValue) {
-        bestValue = boardValue;
-        bestMove = move;
-      }
-    }
-  }
-
-  return bestMove || moves[Math.floor(Math.random() * moves.length)];
-}
-
-function makeAIMove() {
-  if (!game || !board) return;
-  const bestMove = getBestMove(game, aiDifficulty);
-  if (!bestMove) return;
-
-  game.move(bestMove);
-  applyBoardPosition();
-  renderMoveHistory();
-  updateStatus();
-}
-
-/* =========================
-   CHESS ACADEMY
-========================= */
-function getCurrentLesson() {
-  return getLessonById(currentLessonId);
-}
-
-function calculateStars() {
-  return lessonHintUsed ? 2 : 3;
-}
-
-function markLessonComplete(lessonId) {
-  lessonCompleted[lessonId] = true;
-  const stars = calculateStars();
-  lessonStars[lessonId] = Math.max(lessonStars[lessonId] || 0, stars);
-  saveProgress();
-  renderLessonList();
-  renderProgress();
-  updateLessonStars();
-}
-
-function updateLessonStars() {
-  const stars = lessonStars[currentLessonId] || 0;
-  if (lessonStarsTagEl) lessonStarsTagEl.textContent = `Stars: ${stars}`;
-}
-
-function renderProgress() {
-  const total = lessons.length;
-  const done = lessons.filter((l) => lessonCompleted[l.id]).length;
-  const percent = total ? Math.round((done / total) * 100) : 0;
-  academyProgressBadgeEl.textContent = `${percent}% Complete`;
-
-  const levels = ["beginner", "intermediate", "advanced", "expert"];
-  progressStatsEl.innerHTML = "";
-
-  levels.forEach((level) => {
-    const levelLessons = lessons.filter((l) => l.level === level);
-    const levelDone = levelLessons.filter((l) => lessonCompleted[l.id]).length;
-    const row = document.createElement("div");
-    row.className = "progress-row";
-    row.innerHTML = `<span>${capitalize(level)}</span><span>${levelDone}/${levelLessons.length} complete</span>`;
-    progressStatsEl.appendChild(row);
-  });
-
-  const totalStars = Object.values(lessonStars).reduce((a, b) => a + b, 0);
-  const totalRow = document.createElement("div");
-  totalRow.className = "progress-row";
-  totalRow.innerHTML = `<strong>Total</strong><strong>${done}/${total} lessons • ${totalStars} stars</strong>`;
-  progressStatsEl.appendChild(totalRow);
-}
-
-function renderLessonList() {
-  const levelLessons = getLessonsByLevel(currentLevel);
-  lessonListEl.innerHTML = "";
-
-  levelLessons.forEach((lesson, index) => {
-    const stars = lessonStars[lesson.id] || 0;
-    const item = document.createElement("div");
-    item.className = "lesson-item";
-    if (lesson.id === currentLessonId) item.classList.add("active-lesson");
-    if (lessonCompleted[lesson.id]) item.classList.add("done");
-
-    item.innerHTML = `
-      <div class="lesson-item-title">${index + 1}. ${lesson.title}</div>
-      <div class="lesson-item-meta">${capitalize(lesson.type)} • ${lessonCompleted[lesson.id] ? "Completed" : "Not completed"} • ⭐ ${stars}</div>
-    `;
-
-    item.addEventListener("click", () => loadLesson(lesson.id));
-    lessonListEl.appendChild(item);
-  });
-}
-
-function loadLesson(id) {
-  const lesson = getLessonById(id);
-  if (!lesson) return;
-
-  leaveOnlineRoom();
-  setCurrentSection("academy");
-  setCurrentGame("chess");
-  playMode = "local";
-  currentLessonId = lesson.id;
-  currentLessonStepIndex = 0;
-  academyLocked = false;
-  lessonHintUsed = false;
-
-  if (!game) game = new Chess(lesson.fen);
-  game.load(lesson.fen);
-
-  if (board) {
-    board.orientation(lesson.orientation || "white");
-    applyBoardPosition();
-  }
-
-  lessonTitleEl.textContent = lesson.title;
-  lessonSummaryEl.textContent = lesson.summary;
-  lessonLevelTagEl.textContent = capitalize(lesson.level);
-  lessonTypeTagEl.textContent = capitalize(lesson.type);
-  setCoachMessage(lesson.coachIntro);
-
-  clearSquareHighlights();
-  renderMoveHistory();
-  renderLessonList();
-  renderProgress();
-  updateLessonStars();
-  updateStatus();
-
-  const nextStep = lesson.expectedMoves[currentLessonStepIndex];
-  if (nextStep && nextStep.by === "coach") {
-    setTimeout(runCoachSteps, 500);
-  }
-}
-
-function retryCurrentLesson() {
-  if (!currentLessonId) return;
-  loadLesson(currentLessonId);
-}
-
-function runCoachSteps() {
-  const lesson = getCurrentLesson();
-  if (!lesson || academyLocked) return;
-
-  while (lesson.expectedMoves[currentLessonStepIndex] && lesson.expectedMoves[currentLessonStepIndex].by === "coach") {
-    const step = lesson.expectedMoves[currentLessonStepIndex];
-    const move = game.move({
-      from: step.from,
-      to: step.to,
-      promotion: step.promotion || "q"
-    });
-
-    if (!move) {
-      setCoachMessage("There was a lesson script problem. Retry the lesson.");
-      return;
-    }
-
-    currentLessonStepIndex++;
-    applyBoardPosition();
-    renderMoveHistory();
-    if (step.note) setCoachMessage(step.note);
-  }
-
-  updateStatus();
-
-  if (currentLessonStepIndex >= lesson.expectedMoves.length) {
-    finishLesson(lesson);
-  }
-}
-
-function finishLesson(lesson) {
-  academyLocked = true;
-  markLessonComplete(lesson.id);
-  const stars = lessonStars[lesson.id] || 0;
-  setCoachMessage(`${lesson.completionText || "Lesson complete."} You earned ${stars} star${stars === 1 ? "" : "s"}.`);
-  safeSetStatus(`Lesson complete: ${lesson.title}`);
-}
-
-function handleAcademyMove(source, target) {
-  const lesson = getCurrentLesson();
-  if (!lesson || academyLocked) return "snapback";
-
-  const step = lesson.expectedMoves[currentLessonStepIndex];
-  if (!step) return "snapback";
-
-  if (step.by !== "user") {
-    setCoachMessage("Wait for the coach move first.");
-    return "snapback";
-  }
-
-  const attemptedMove = game.move({
-    from: source,
-    to: target,
-    promotion: "q"
-  });
-
-  if (attemptedMove === null) return "snapback";
-
-  const correct = source === step.from && target === step.to;
-  if (!correct) {
-    game.undo();
-    setCoachMessage("Not the teaching move for this lesson. Use Hint if you want help.");
-    highlightSquares(step.from, step.to);
-    return "snapback";
-  }
-
-  currentLessonStepIndex++;
-  applyBoardPosition();
-  renderMoveHistory();
-  clearSquareHighlights();
-  if (step.note) setCoachMessage(step.note);
-  updateStatus();
-
-  if (currentLessonStepIndex >= lesson.expectedMoves.length) {
-    finishLesson(lesson);
-    return;
-  }
-
-  setTimeout(runCoachSteps, 500);
-}
-
-function showHint() {
-  const lesson = getCurrentLesson();
-  if (!lesson) {
-    setCoachMessage("Choose a lesson first.");
-    return;
-  }
-
-  const step = lesson.expectedMoves[currentLessonStepIndex];
-  if (!step) {
-    setCoachMessage("This lesson is already finished.");
-    return;
-  }
-
-  lessonHintUsed = true;
-
-  if (step.by === "user") {
-    highlightSquares(step.from, step.to);
-    setCoachMessage(lesson.hints?.[0] || `Try ${step.from} to ${step.to}.`);
-  } else {
-    setCoachMessage("The next move belongs to the coach line. Watch what happens.");
-  }
-}
-
-function goToAdjacentLesson(direction) {
-  const levelLessons = getLessonsByLevel(currentLevel);
-  if (!levelLessons.length) return;
-
-  let index = levelLessons.findIndex((l) => l.id === currentLessonId);
-  if (index === -1) index = 0;
-  index += direction;
-  if (index < 0) index = 0;
-  if (index >= levelLessons.length) index = levelLessons.length - 1;
-
-  loadLesson(levelLessons[index].id);
-}
-
-function setLevel(level) {
-  currentLevel = level;
-  document.querySelectorAll(".level-btn").forEach((btn) => {
-    btn.classList.toggle("active-level", btn.dataset.level === level);
-  });
-
-  const levelLessons = getLessonsByLevel(level);
-  const fallbackLesson = levelLessons[0]?.id || null;
-
-  if (!currentLessonId || !levelLessons.some((l) => l.id === currentLessonId)) {
-    currentLessonId = fallbackLesson;
-  }
-
-  renderLessonList();
-  if (currentLessonId) loadLesson(currentLessonId);
-}
-
-function loadSpecialLesson(id) {
-  currentLevel = getLessonById(id).level;
-  document.querySelectorAll(".level-btn").forEach((btn) => {
-    btn.classList.toggle("active-level", btn.dataset.level === currentLevel);
-  });
-  loadLesson(id);
-}
-
-/* =========================
-   CHESS DRAG
-========================= */
-function onDragStart(source, piece) {
-  if (currentGame !== "chess") return false;
-  if (!game) return false;
-  if (game.game_over()) return false;
-
-  if (
-    (game.turn() === "w" && piece.startsWith("b")) ||
-    (game.turn() === "b" && piece.startsWith("w"))
-  ) {
-    return false;
-  }
-
-  if (currentSection === "play" && playMode === "online") {
-    if (!isMyTurn) return false;
-    const turnColor = game.turn() === "w" ? "white" : "black";
-    if (turnColor !== playerColor) return false;
-  }
-
-  if (currentSection === "academy") {
-    const lesson = getCurrentLesson();
-    if (!lesson || academyLocked) return false;
-    const step = lesson.expectedMoves[currentLessonStepIndex];
-    if (!step || step.by !== "user") return false;
-  }
-
+function chOnDragStart(src, piece) {
+  if (chessGame.game_over()) return false;
+  if (chessMode === 'ai' && chessGame.turn() === 'b') return false;
+  if (chessMode === 'online' && piece[0] !== chessOnlineColor) return false;
+  if (chessGame.turn() === 'w' && piece[0] === 'b') return false;
+  if (chessGame.turn() === 'b' && piece[0] === 'w') return false;
   return true;
 }
 
-function onDrop(source, target) {
-  if (currentGame !== "chess") return "snapback";
-  if (!game) return "snapback";
+function chOnDrop(src, tgt) {
+  const m = chessGame.move({from:src,to:tgt,promotion:'q'});
+  if (!m) return 'snapback';
+  addChessMove(m.san);
+  updateChessStatus();
+  if (chessMode === 'ai') setTimeout(makeChessAiMove, 350);
+  if (chessMode === 'online' && chessRoomCode) syncChessMove();
+}
 
-  if (currentSection === "academy") {
-    return handleAcademyMove(source, target);
+function makeChessAiMove() {
+  if (chessGame.game_over()) return;
+  const depth = {easy:1,medium:2,hard:3,expert:4}[chessDiff] || 2;
+  if (chessDiff === 'easy') {
+    const moves = chessGame.moves();
+    chessGame.move(moves[Math.floor(Math.random()*moves.length)]);
+  } else {
+    chBestMove(depth);
   }
+  chessBoard.position(chessGame.fen());
+  addChessMove(chessGame.history().slice(-1)[0]);
+  updateChessStatus();
+}
 
-  const move = game.move({
-    from: source,
-    to: target,
-    promotion: "q"
+function chBestMove(depth) {
+  const moves = chessGame.moves({verbose:true});
+  let best = null, bestScore = -Infinity;
+  for (const m of moves) {
+    chessGame.move(m);
+    const s = -chNegamax(depth-1, -Infinity, Infinity);
+    chessGame.undo();
+    if (s > bestScore) { bestScore = s; best = m; }
+  }
+  if (best) chessGame.move(best);
+}
+
+function chNegamax(depth, alpha, beta) {
+  if (depth === 0 || chessGame.game_over()) return chEval();
+  let score = -Infinity;
+  for (const m of chessGame.moves({verbose:true})) {
+    chessGame.move(m);
+    score = Math.max(score, -chNegamax(depth-1, -beta, -alpha));
+    chessGame.undo();
+    alpha = Math.max(alpha, score);
+    if (alpha >= beta) break;
+  }
+  return score;
+}
+
+function chEval() {
+  let s = 0;
+  const turn = chessGame.turn();
+  for (const row of chessGame.board()) {
+    for (const p of row) {
+      if (!p) continue;
+      const v = CVALS[p.type] || 0;
+      s += p.color === turn ? v : -v;
+    }
+  }
+  if (chessGame.in_checkmate()) s -= 100000;
+  if (chessGame.in_check()) s -= 50;
+  return s;
+}
+
+function updateChessStatus() {
+  const el = document.getElementById('chessStatus');
+  if (!el) return;
+  if (chessGame.in_checkmate()) el.textContent = `Checkmate! ${chessGame.turn()==='w'?'Black':'White'} wins! 🏆`;
+  else if (chessGame.in_draw()) el.textContent = 'Draw! 🤝';
+  else if (chessGame.in_check()) el.textContent = `${chessGame.turn()==='w'?'White':'Black'} is in check! ⚠️`;
+  else el.textContent = `${chessGame.turn()==='w'?'White ♙':'Black ♟'}'s turn`;
+}
+
+function addChessMove(san) {
+  const el = document.getElementById('chessMoveHistory');
+  if (!el || !san) return;
+  const li = document.createElement('li'); li.textContent = san;
+  el.appendChild(li); el.scrollTop = el.scrollHeight;
+}
+
+function clearChessMoveHistory() {
+  const el = document.getElementById('chessMoveHistory'); if (el) el.innerHTML = '';
+}
+
+// Chess mode buttons
+document.querySelectorAll('[data-chess-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-chess-mode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    chessMode = btn.dataset.chessMode;
+    const diffCard = document.getElementById('chessDiffCard');
+    if (chessMode === 'ai') {
+      diffCard.style.display = '';
+      initChessView();
+    } else if (chessMode === 'local') {
+      diffCard.style.display = 'none';
+      initChessView();
+    } else if (chessMode === 'create') {
+      diffCard.style.display = 'none';
+      openRoomModal('create', 'chess');
+    } else if (chessMode === 'join') {
+      diffCard.style.display = 'none';
+      openRoomModal('join', 'chess');
+    }
   });
+});
 
-  if (move === null) return "snapback";
+document.querySelectorAll('[data-chess-diff]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-chess-diff]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    chessDiff = btn.dataset.chessDiff;
+  });
+});
 
-  applyBoardPosition();
-  clearSquareHighlights();
-  renderMoveHistory();
-  updateStatus();
+document.getElementById('chessResetBtn').addEventListener('click', initChessView);
+document.getElementById('chessFlipBtn').addEventListener('click', () => { if (chessBoard) chessBoard.flip(); });
 
-  if (playMode === "ai" && !game.game_over()) {
-    setTimeout(makeAIMove, 250);
-  }
+// Chess Online sync
+function syncChessMove() {
+  db.ref(`rooms/chess/${chessRoomCode}`).update({ fen: chessGame.fen(), turn: chessGame.turn() });
+}
 
-  if (playMode === "online" && socket && roomId) {
-    isMyTurn = false;
-    socket.emit("move", {
-      roomId,
-      move: {
-        from: source,
-        to: target,
-        promotion: "q"
+function listenChessRoom(code, myColor) {
+  chessOnlineColor = myColor === 'white' ? 'w' : 'b';
+  chessRoomCode = code;
+  chessMode = 'online';
+  if (chessOnlineRef) chessOnlineRef.off();
+  chessOnlineRef = db.ref(`rooms/chess/${code}`);
+  chessOnlineRef.on('value', snap => {
+    const d = snap.val();
+    if (!d) return;
+    if (d.fen && d.fen !== chessGame.fen()) {
+      chessGame.load(d.fen);
+      chessBoard.position(chessGame.fen());
+      updateChessStatus();
+    }
+    if (d.status === 'playing') {
+      document.getElementById('chessOnlineBadge').classList.remove('hidden');
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// ██████  CHECKERS
+// ════════════════════════════════════════════════════════════
+let ck = {
+  board: [], turn: 'red', selected: null, validMoves: [],
+  mode: 'ai', diff: 'medium', redCap: 0, blackCap: 0,
+  onlineColor: null, roomCode: null, onlineRef: null,
+  mustJumpFrom: null
+};
+
+function initCheckersView() {
+  ck.board = [];
+  for (let r = 0; r < 8; r++) {
+    ck.board[r] = [];
+    for (let c = 0; c < 8; c++) {
+      if ((r + c) % 2 !== 0) {
+        if (r < 3) ck.board[r][c] = {color:'black', king:false};
+        else if (r > 4) ck.board[r][c] = {color:'red', king:false};
+        else ck.board[r][c] = null;
+      } else {
+        ck.board[r][c] = null;
       }
-    });
-    updateStatus();
-  }
-}
-
-function onSnapEnd() {
-  applyBoardPosition();
-}
-
-/* =========================
-   CHECKERS LOGIC
-========================= */
-function createInitialCheckersBoard() {
-  const arr = Array.from({ length: 8 }, () => Array(8).fill(null));
-
-  for (let r = 0; r < 3; r++) {
-    for (let c = 0; c < 8; c++) {
-      if ((r + c) % 2 === 1) arr[r][c] = { color: "black", king: false };
     }
   }
-
-  for (let r = 5; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      if ((r + c) % 2 === 1) arr[r][c] = { color: "red", king: false };
-    }
-  }
-
-  arr._history = [];
-  arr._flipped = false;
-  return arr;
+  ck.turn = 'red'; ck.selected = null; ck.validMoves = [];
+  ck.redCap = 0; ck.blackCap = 0; ck.mustJumpFrom = null;
+  renderCheckers();
+  updateCkStatus();
+  document.getElementById('ckRedCaptures').textContent = '0';
+  document.getElementById('ckBlackCaptures').textContent = '0';
 }
 
-function initCheckersGame() {
-  checkersBoardState = createInitialCheckersBoard();
-  checkersCurrentPlayer = "red";
-  selectedChecker = null;
-  validMoves = [];
-  renderCheckersBoard();
-  renderMoveHistory();
-  updateCheckersStatus();
-}
-
-function startCheckersLocal() {
-  setCurrentGame("checkers");
-  setCurrentSection("play");
-  checkersMode = "local";
-  initCheckersGame();
-}
-
-function startCheckersAI() {
-  setCurrentGame("checkers");
-  setCurrentSection("play");
-  checkersMode = "ai";
-  initCheckersGame();
-}
-
-function insideBoard(r, c) {
-  return r >= 0 && r < 8 && c >= 0 && c < 8;
-}
-
-function getCheckersDirections(piece) {
-  if (piece.king) return [[1, -1], [1, 1], [-1, -1], [-1, 1]];
-  return piece.color === "red" ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]];
-}
-
-function getCheckersMovesForPiece(r, c) {
-  const piece = checkersBoardState[r][c];
-  if (!piece) return [];
-
-  const dirs = getCheckersDirections(piece);
-  const moves = [];
-
-  for (const [dr, dc] of dirs) {
-    const nr = r + dr;
-    const nc = c + dc;
-    const jr = r + dr * 2;
-    const jc = c + dc * 2;
-
-    if (insideBoard(nr, nc) && !checkersBoardState[nr][nc]) {
-      moves.push({ from: [r, c], to: [nr, nc], capture: null });
-    } else if (
-      insideBoard(jr, jc) &&
-      checkersBoardState[nr]?.[nc] &&
-      checkersBoardState[nr][nc].color !== piece.color &&
-      !checkersBoardState[jr][jc]
-    ) {
-      moves.push({ from: [r, c], to: [jr, jc], capture: [nr, nc] });
-    }
-  }
-
-  return moves;
-}
-
-function getAllCheckersMoves(color) {
-  const all = [];
+function renderCheckers() {
+  const grid = document.getElementById('checkersGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
-      const piece = checkersBoardState[r][c];
-      if (piece && piece.color === color) {
-        all.push(...getCheckersMovesForPiece(r, c));
+      const cell = document.createElement('div');
+      const isDark = (r + c) % 2 !== 0;
+      cell.className = `ck-cell ${isDark ? 'dark' : 'light'}`;
+      cell.dataset.r = r; cell.dataset.c = c;
+
+      const isValidMove = ck.validMoves.some(m => m.tr === r && m.tc === c);
+      const isJump = ck.validMoves.some(m => m.tr === r && m.tc === c && m.jump);
+      if (isValidMove) cell.classList.add(isJump ? 'valid-jump' : 'valid-move');
+
+      const piece = ck.board[r][c];
+      if (piece) {
+        const p = document.createElement('div');
+        p.className = `ck-piece ${piece.color}${piece.king ? ' king' : ''}`;
+        if (ck.selected && ck.selected.r === r && ck.selected.c === c) p.classList.add('selected');
+        cell.appendChild(p);
       }
+      cell.addEventListener('click', () => onCkClick(r, c));
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function onCkClick(r, c) {
+  if (ck.mode === 'online' && ck.turn !== ck.onlineColor) return;
+  const piece = ck.board[r][c];
+  const isValidDest = ck.validMoves.some(m => m.tr === r && m.tc === c);
+
+  if (isValidDest && ck.selected) {
+    const move = ck.validMoves.find(m => m.tr === r && m.tc === c);
+    applyCkMove(move);
+    return;
+  }
+
+  if (piece && piece.color === ck.turn) {
+    ck.selected = {r, c};
+    ck.validMoves = getCkMoves(r, c, ck.board);
+    // If there are jumps available on board, only allow jumps
+    const allJumps = getAllCkJumps(ck.turn, ck.board);
+    if (allJumps.length > 0) ck.validMoves = ck.validMoves.filter(m => m.jump);
+    renderCheckers();
+    return;
+  }
+
+  ck.selected = null; ck.validMoves = [];
+  renderCheckers();
+}
+
+function getCkMoves(r, c, board) {
+  const piece = board[r][c];
+  if (!piece) return [];
+  const dirs = piece.color === 'red' ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
+  if (piece.king) { dirs.push(...(piece.color==='red'?[[1,-1],[1,1]]:[[-1,-1],[-1,1]])); }
+  const moves = [], jumps = [];
+  for (const [dr, dc] of dirs) {
+    const nr = r+dr, nc = c+dc;
+    if (nr<0||nr>7||nc<0||nc>7) continue;
+    if (!board[nr][nc]) {
+      moves.push({fr:r,fc:c,tr:nr,tc:nc,jump:false});
+    } else if (board[nr][nc].color !== piece.color) {
+      const jr = nr+dr, jc = nc+dc;
+      if (jr>=0&&jr<=7&&jc>=0&&jc<=7&&!board[jr][jc]) {
+        jumps.push({fr:r,fc:c,tr:jr,tc:jc,cr:nr,cc:nc,jump:true});
+      }
+    }
+  }
+  return jumps.length ? jumps : moves;
+}
+
+function getAllCkMoves(color, board) {
+  const all = [];
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    if (board[r][c]?.color === color) all.push(...getCkMoves(r,c,board));
+  }
+  const jumps = all.filter(m=>m.jump);
+  return jumps.length ? jumps : all;
+}
+
+function getAllCkJumps(color, board) {
+  const all = [];
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    if (board[r][c]?.color === color) {
+      const m = getCkMoves(r,c,board).filter(x=>x.jump);
+      all.push(...m);
     }
   }
   return all;
 }
 
-function countCheckersPieces(color) {
-  let count = 0;
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      if (checkersBoardState[r][c]?.color === color) count++;
+function applyCkMove(move) {
+  const boardCopy = deepCopyBoard(ck.board);
+  const piece = boardCopy[move.fr][move.fc];
+  boardCopy[move.tr][move.tc] = piece;
+  boardCopy[move.fr][move.fc] = null;
+  if (move.jump) {
+    boardCopy[move.cr][move.cc] = null;
+    if (move.fr > move.tr ? piece.color === 'black' : piece.color === 'red') {}
+    if (piece.color === 'red') ck.redCap++;
+    else ck.blackCap++;
+    document.getElementById('ckRedCaptures').textContent = ck.redCap;
+    document.getElementById('ckBlackCaptures').textContent = ck.blackCap;
+  }
+  // King promotion
+  if (piece.color === 'red' && move.tr === 0) piece.king = true;
+  if (piece.color === 'black' && move.tr === 7) piece.king = true;
+
+  ck.board = boardCopy;
+
+  // Multi-jump check
+  if (move.jump) {
+    const moreJumps = getCkMoves(move.tr, move.tc, ck.board).filter(m=>m.jump);
+    if (moreJumps.length > 0) {
+      ck.selected = {r:move.tr, c:move.tc};
+      ck.validMoves = moreJumps;
+      renderCheckers();
+      updateCkStatus();
+      if (ck.mode === 'online' && ck.onlineColor === ck.turn) syncCkBoard();
+      return;
     }
   }
-  return count;
-}
 
-function maybePromoteChecker(r, c) {
-  const piece = checkersBoardState[r][c];
-  if (!piece || piece.king) return;
+  ck.turn = ck.turn === 'red' ? 'black' : 'red';
+  ck.selected = null; ck.validMoves = [];
 
-  if (piece.color === "red" && r === 0) piece.king = true;
-  if (piece.color === "black" && r === 7) piece.king = true;
-}
+  if (ck.mode === 'online' && ck.onlineColor) syncCkBoard();
 
-function coordToLabel(r, c) {
-  const file = "abcdefgh"[c];
-  const rank = 8 - r;
-  return `${file}${rank}`;
-}
+  renderCheckers();
+  updateCkStatus();
+  checkCkGameOver();
 
-function applyCheckersMove(move) {
-  const [fr, fc] = move.from;
-  const [tr, tc] = move.to;
-  const piece = checkersBoardState[fr][fc];
-  checkersBoardState[fr][fc] = null;
-  checkersBoardState[tr][tc] = piece;
-
-  if (move.capture) {
-    const [cr, cc] = move.capture;
-    checkersBoardState[cr][cc] = null;
-  }
-
-  maybePromoteChecker(tr, tc);
-
-  const pieceName = piece.king ? "K" : "M";
-  const notation = `${piece.color} ${pieceName}: ${coordToLabel(fr, fc)} → ${coordToLabel(tr, tc)}${move.capture ? " x" : ""}`;
-  checkersBoardState._history.push(notation);
-
-  checkersCurrentPlayer = checkersCurrentPlayer === "red" ? "black" : "red";
-  selectedChecker = null;
-  validMoves = [];
-
-  renderCheckersBoard();
-  renderMoveHistory();
-  updateCheckersStatus();
-
-  if (checkersMode === "ai" && checkersCurrentPlayer === "black") {
-    scheduleCheckersAi();
+  if (!ckIsGameOver() && (ck.mode === 'ai' && ck.turn === 'black')) {
+    setTimeout(makeCkAiMove, 500);
   }
 }
 
-function evaluateCheckersBoard(colorPerspective = "black") {
-  let score = 0;
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const piece = checkersBoardState[r][c];
-      if (!piece) continue;
-      let value = piece.king ? 175 : 100;
+function deepCopyBoard(board) {
+  return board.map(row => row.map(cell => cell ? {...cell} : null));
+}
 
-      if (!piece.king) {
-        value += piece.color === "black" ? r * 5 : (7 - r) * 5;
-      }
+function ckIsGameOver() {
+  const rMoves = getAllCkMoves('red', ck.board);
+  const bMoves = getAllCkMoves('black', ck.board);
+  return rMoves.length === 0 || bMoves.length === 0;
+}
 
-      score += piece.color === colorPerspective ? value : -value;
-    }
+function checkCkGameOver() {
+  const el = document.getElementById('ckStatus');
+  if (!el) return;
+  if (getAllCkMoves('red', ck.board).length === 0) el.textContent = '⚫ Black wins! 🏆';
+  else if (getAllCkMoves('black', ck.board).length === 0) el.textContent = '🔴 Red wins! 🏆';
+}
+
+function updateCkStatus() {
+  const el = document.getElementById('ckStatus');
+  if (!el) return;
+  if (!ckIsGameOver()) el.textContent = `${ck.turn === 'red' ? '🔴 Red' : '⚫ Black'}'s turn`;
+}
+
+function makeCkAiMove() {
+  if (ck.mode !== 'ai' || ckIsGameOver()) return;
+  const moves = getAllCkMoves('black', ck.board);
+  if (!moves.length) return;
+  let move;
+  if (ck.diff === 'easy') {
+    move = moves[Math.floor(Math.random()*moves.length)];
+  } else if (ck.diff === 'medium') {
+    const jumps = moves.filter(m=>m.jump);
+    move = jumps.length ? jumps[Math.floor(Math.random()*jumps.length)] : moves[Math.floor(Math.random()*moves.length)];
+  } else {
+    move = ckMinimaxMove(3);
+  }
+  ck.selected = null; ck.validMoves = [];
+  applyCkMove(move);
+}
+
+function ckMinimaxMove(depth) {
+  const moves = getAllCkMoves('black', ck.board);
+  let best = null, bestScore = -Infinity;
+  for (const m of moves) {
+    const saved = deepCopyBoard(ck.board);
+    const savedTurn = ck.turn;
+    const savedRed = ck.redCap, savedBlack = ck.blackCap;
+    applyCkMoveSimulate(m, ck.board);
+    const score = -ckMinimax(ck.board, depth-1, -Infinity, Infinity, 'red');
+    ck.board = saved; ck.turn = savedTurn;
+    ck.redCap = savedRed; ck.blackCap = savedBlack;
+    if (score > bestScore) { bestScore = score; best = m; }
+  }
+  return best || moves[0];
+}
+
+function applyCkMoveSimulate(move, board) {
+  const piece = board[move.fr][move.fc];
+  board[move.tr][move.tc] = piece ? {...piece} : null;
+  board[move.fr][move.fc] = null;
+  if (move.jump && board[move.cr]) board[move.cr][move.cc] = null;
+  if (piece) {
+    if (piece.color==='red'&&move.tr===0) piece.king=true;
+    if (piece.color==='black'&&move.tr===7) piece.king=true;
+  }
+}
+
+function ckMinimax(board, depth, alpha, beta, color) {
+  const moves = getAllCkMoves(color, board);
+  if (depth===0||!moves.length) return ckEvalBoard(board);
+  let score = -Infinity;
+  for (const m of moves) {
+    const b2 = deepCopyBoard(board);
+    applyCkMoveSimulate(m, b2);
+    const s = -ckMinimax(b2, depth-1, -beta, -alpha, color==='red'?'black':'red');
+    score = Math.max(score, s);
+    alpha = Math.max(alpha, s);
+    if (alpha >= beta) break;
   }
   return score;
 }
 
-function chooseCheckersAiMove() {
-  const moves = getAllCheckersMoves("black");
-  if (!moves.length) return null;
-
-  if (checkersDifficulty === "easy") {
-    return moves[Math.floor(Math.random() * moves.length)];
+function ckEvalBoard(board) {
+  let score = 0;
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    const p = board[r][c];
+    if (!p) continue;
+    const v = p.king ? 3 : 1;
+    score += p.color === 'black' ? v : -v;
   }
-
-  let bestMove = null;
-  let bestScore = -Infinity;
-
-  for (const move of moves) {
-    const snapshot = cloneCheckersBoard();
-    simulateCheckersMove(move);
-    let score = evaluateCheckersBoard("black");
-
-    if (checkersDifficulty === "medium" && move.capture) score += 80;
-    if (checkersDifficulty === "hard" && move.capture) score += 120;
-    if (checkersDifficulty === "expert" && move.capture) score += 160;
-
-    if (move.to[0] === 7) score += 60;
-
-    restoreCheckersBoard(snapshot);
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMove = move;
-    }
-  }
-
-  return bestMove || moves[Math.floor(Math.random() * moves.length)];
+  return score;
 }
 
-function cloneCheckersBoard() {
-  const clone = checkersBoardState.map((row) =>
-    row.map((cell) => (cell ? { color: cell.color, king: cell.king } : null))
-  );
-  clone._history = [...(checkersBoardState._history || [])];
-  clone._flipped = !!checkersBoardState._flipped;
-  clone._player = checkersCurrentPlayer;
-  return clone;
-}
-
-function restoreCheckersBoard(snapshot) {
-  checkersBoardState = snapshot.map((row) =>
-    row.map((cell) => (cell ? { color: cell.color, king: cell.king } : null))
-  );
-  checkersBoardState._history = [...(snapshot._history || [])];
-  checkersBoardState._flipped = !!snapshot._flipped;
-  checkersCurrentPlayer = snapshot._player || "red";
-}
-
-function simulateCheckersMove(move) {
-  const [fr, fc] = move.from;
-  const [tr, tc] = move.to;
-  const piece = checkersBoardState[fr][fc];
-  checkersBoardState[fr][fc] = null;
-  checkersBoardState[tr][tc] = piece;
-  if (move.capture) {
-    const [cr, cc] = move.capture;
-    checkersBoardState[cr][cc] = null;
-  }
-  maybePromoteChecker(tr, tc);
-  checkersCurrentPlayer = checkersCurrentPlayer === "red" ? "black" : "red";
-}
-
-function scheduleCheckersAi() {
-  if (pendingCheckerAi) clearTimeout(pendingCheckerAi);
-  pendingCheckerAi = setTimeout(() => {
-    const move = chooseCheckersAiMove();
-    if (move) applyCheckersMove(move);
-  }, 350);
-}
-
-function handleCheckersSquareClick(r, c) {
-  if (currentGame !== "checkers" || currentSection !== "play") return;
-  if (checkersMode === "ai" && checkersCurrentPlayer !== "red") return;
-
-  const piece = checkersBoardState[r][c];
-
-  if (selectedChecker) {
-    const chosenMove = validMoves.find((m) => m.to[0] === r && m.to[1] === c);
-    if (chosenMove) {
-      applyCheckersMove(chosenMove);
-      return;
-    }
-  }
-
-  if (piece && piece.color === checkersCurrentPlayer) {
-    selectedChecker = [r, c];
-    validMoves = getCheckersMovesForPiece(r, c);
-    renderCheckersBoard();
-    return;
-  }
-
-  selectedChecker = null;
-  validMoves = [];
-  renderCheckersBoard();
-}
-
-function renderCheckersBoard() {
-  const boardEl = document.getElementById("checkersBoard");
-  if (!boardEl) return;
-
-  boardEl.innerHTML = "";
-
-  const flipped = !!checkersBoardState._flipped;
-  const rows = flipped ? [...Array(8).keys()].reverse() : [...Array(8).keys()];
-  const cols = flipped ? [...Array(8).keys()].reverse() : [...Array(8).keys()];
-
-  for (const r of rows) {
-    for (const c of cols) {
-      const square = document.createElement("div");
-      square.className = `checkers-square ${((r + c) % 2 === 0) ? "light" : "dark"}`;
-
-      if (selectedChecker && selectedChecker[0] === r && selectedChecker[1] === c) {
-        square.classList.add("selected");
-      }
-
-      if (validMoves.some((m) => m.to[0] === r && m.to[1] === c)) {
-        square.classList.add("valid");
-      }
-
-      square.addEventListener("click", () => handleCheckersSquareClick(r, c));
-
-      const piece = checkersBoardState[r][c];
-      if (piece) {
-        const pieceEl = document.createElement("div");
-        pieceEl.className = `checkers-piece ${piece.color} ${piece.king ? "king" : ""}`;
-        square.appendChild(pieceEl);
-      }
-
-      boardEl.appendChild(square);
-    }
-  }
-}
-
-/* =========================
-   CHESS BOARD INIT
-========================= */
-function initBoard() {
-  const boardElement = document.getElementById("board");
-  if (!boardElement) {
-    safeSetStatus("Error: board element not found");
-    return;
-  }
-
-  if (typeof $ === "undefined") {
-    safeSetStatus("Error: jQuery did not load");
-    return;
-  }
-
-  if (typeof Chess === "undefined") {
-    safeSetStatus("Error: chess.js did not load");
-    return;
-  }
-
-  if (typeof Chessboard === "undefined") {
-    safeSetStatus("Error: chessboard.js did not load");
-    return;
-  }
-
-  game = new Chess();
-
-  board = Chessboard("board", {
-    draggable: true,
-    position: "start",
-    pieceTheme: "https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png",
-    onDragStart,
-    onDrop,
-    onSnapEnd
+// Checkers mode buttons
+document.querySelectorAll('[data-ck-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-ck-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ck.mode = btn.dataset.ckMode;
+    const diffCard = document.getElementById('ckDiffCard');
+    if (ck.mode === 'ai') { diffCard.style.display=''; initCheckersView(); }
+    else if (ck.mode === 'local') { diffCard.style.display='none'; initCheckersView(); }
+    else if (ck.mode === 'create') { diffCard.style.display='none'; openRoomModal('create','checkers'); }
+    else if (ck.mode === 'join') { diffCard.style.display='none'; openRoomModal('join','checkers'); }
   });
-
-  renderMoveHistory();
-  updateStatus();
-}
-
-/* =========================
-   EVENTS
-========================= */
-function bindEvents() {
-  document.getElementById("playTabBtn")?.addEventListener("click", () => {
-    setCurrentSection("play");
-    updateStatus();
-  });
-
-  document.getElementById("academyTabBtn")?.addEventListener("click", () => {
-    setCurrentSection("academy");
-    if (currentGame === "chess") {
-      if (!currentLessonId) {
-        const first = getLessonsByLevel(currentLevel)[0];
-        if (first) loadLesson(first.id);
-      } else {
-        loadLesson(currentLessonId);
-      }
-    }
-  });
-
-  document.getElementById("chessGameBtn")?.addEventListener("click", () => {
-    setCurrentGame("chess");
-    updateStatus();
-  });
-
-  document.getElementById("checkersGameBtn")?.addEventListener("click", () => {
-    setCurrentGame("checkers");
-    updateStatus();
-  });
-
-  document.getElementById("aiBtn")?.addEventListener("click", startAI);
-  document.getElementById("localBtn")?.addEventListener("click", startLocal);
-  document.getElementById("createRoomBtn")?.addEventListener("click", createRoom);
-  document.getElementById("joinRoomBtn")?.addEventListener("click", joinRoom);
-
-  document.getElementById("checkersAiBtn")?.addEventListener("click", startCheckersAI);
-  document.getElementById("checkersLocalBtn")?.addEventListener("click", startCheckersLocal);
-
-  document.getElementById("flipBtn")?.addEventListener("click", flipBoard);
-
-  document.getElementById("resetBtn")?.addEventListener("click", () => {
-    if (currentGame === "checkers") {
-      initCheckersGame();
-      return;
-    }
-
-    if (currentSection === "academy") retryCurrentLesson();
-    else if (playMode === "online") resetOnlineGame();
-    else resetGameLocal();
-  });
-
-  document.getElementById("hintBtn")?.addEventListener("click", showHint);
-  document.getElementById("retryLessonBtn")?.addEventListener("click", retryCurrentLesson);
-  document.getElementById("prevLessonBtn")?.addEventListener("click", () => goToAdjacentLesson(-1));
-  document.getElementById("nextLessonBtn")?.addEventListener("click", () => goToAdjacentLesson(1));
-
-  document.querySelectorAll(".level-btn").forEach((btn) => {
-    btn.addEventListener("click", () => setLevel(btn.dataset.level));
-  });
-
-  document.querySelectorAll(".difficulty-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      aiDifficulty = btn.dataset.difficulty;
-      updateAIInfo();
-      saveProgress();
-      updateStatus();
-    });
-  });
-
-  document.querySelectorAll(".checkers-difficulty-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      checkersDifficulty = btn.dataset.difficulty;
-      updateCheckersAIInfo();
-      saveProgress();
-      updateStatus();
-    });
-  });
-
-  document.getElementById("openingTrainerBtn")?.addEventListener("click", () => loadSpecialLesson("opening-trainer"));
-  document.getElementById("endgameTrainerBtn")?.addEventListener("click", () => loadSpecialLesson("endgame-trainer"));
-  document.getElementById("dailyChallengeBtn")?.addEventListener("click", () => loadSpecialLesson("daily-challenge"));
-  document.getElementById("reviewModeBtn")?.addEventListener("click", () => {
-    const lesson = getCurrentLesson();
-    if (!lesson) {
-      setCoachMessage("Open a lesson first.");
-      return;
-    }
-    const step = lesson.expectedMoves[currentLessonStepIndex];
-    if (!step) {
-      setCoachMessage("This lesson is already completed.");
-      return;
-    }
-    setCoachMessage(`Review: the next correct move is ${step.from} to ${step.to}.`);
-    highlightSquares(step.from, step.to);
-  });
-}
-
-/* =========================
-   STARTUP
-========================= */
-window.addEventListener("error", (e) => {
-  safeSetStatus(`JS Error: ${e.message}`);
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  statusEl = document.getElementById("status");
-  roomInput = document.getElementById("roomInput");
-  roomCodeEl = document.getElementById("roomCode");
-  moveHistoryEl = document.getElementById("moveHistory");
-  serverStateEl = document.getElementById("serverState");
-
-  playPanel = document.getElementById("playPanel");
-  academyPanel = document.getElementById("academyPanel");
-  currentSectionLabel = document.getElementById("currentSectionLabel");
-  lessonListEl = document.getElementById("lessonList");
-  lessonTitleEl = document.getElementById("lessonTitle");
-  lessonSummaryEl = document.getElementById("lessonSummary");
-  coachBoxEl = document.getElementById("coachBox");
-  lessonLevelTagEl = document.getElementById("lessonLevelTag");
-  lessonTypeTagEl = document.getElementById("lessonTypeTag");
-  lessonStarsTagEl = document.getElementById("lessonStarsTag");
-  academyProgressBadgeEl = document.getElementById("academyProgressBadge");
-  progressStatsEl = document.getElementById("progressStats");
-  aiInfoEl = document.getElementById("aiInfo");
-  checkersAiInfoEl = document.getElementById("checkersAiInfo");
-
-  loadProgress();
-  bindEvents();
-  initBoard();
-  connectSocket();
-  initCheckersGame();
-
-  renderProgress();
-  updateAIInfo();
-  updateCheckersAIInfo();
-  setCurrentSection("play");
-  setCurrentGame("chess");
-  startLocal();
+document.querySelectorAll('[data-ck-diff]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-ck-diff]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); ck.diff = btn.dataset.ckDiff;
+  });
 });
+
+document.getElementById('ckResetBtn').addEventListener('click', initCheckersView);
+
+// Checkers Online
+function syncCkBoard() {
+  if (!ck.roomCode) return;
+  db.ref(`rooms/checkers/${ck.roomCode}`).update({
+    board: JSON.stringify(ck.board),
+    turn: ck.turn
+  });
+}
+
+function listenCkRoom(code, myColor) {
+  ck.onlineColor = myColor; ck.roomCode = code; ck.mode = 'online';
+  if (ck.onlineRef) ck.onlineRef.off();
+  ck.onlineRef = db.ref(`rooms/checkers/${code}`);
+  ck.onlineRef.on('value', snap => {
+    const d = snap.val(); if (!d) return;
+    if (d.board) {
+      const incoming = JSON.parse(d.board);
+      if (JSON.stringify(incoming) !== JSON.stringify(ck.board)) {
+        ck.board = incoming; ck.turn = d.turn;
+        ck.selected = null; ck.validMoves = [];
+        renderCheckers(); updateCkStatus();
+      }
+    }
+    if (d.status === 'playing') document.getElementById('ckOnlineBadge').classList.remove('hidden');
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// ██████  ONLINE ROOM MODAL
+// ════════════════════════════════════════════════════════════
+let _roomGame = null;
+
+function openRoomModal(type, game) {
+  _roomGame = game;
+  const modal = document.getElementById('roomModal');
+  modal.classList.remove('hidden');
+  document.getElementById('createRoomPanel').classList.add('hidden');
+  document.getElementById('joinRoomPanel').classList.add('hidden');
+  document.getElementById('roomError').classList.add('hidden');
+
+  if (type === 'create') {
+    document.getElementById('createRoomPanel').classList.remove('hidden');
+    const code = genRoomCode();
+    document.getElementById('displayRoomCode').textContent = code;
+    document.getElementById('waitingText').textContent = 'Waiting for opponent...';
+    createOnlineRoom(game, code);
+  } else {
+    document.getElementById('joinRoomPanel').classList.remove('hidden');
+    document.getElementById('joinCodeInput').value = '';
+  }
+}
+
+function createOnlineRoom(game, code) {
+  const ref = db.ref(`rooms/${game}/${code}`);
+  const initData = {
+    game, status:'waiting',
+    players:{host: getPlayerId(), guest: null},
+    hostColor:'white'
+  };
+  if (game === 'chess') initData.fen = new Chess().fen();
+  if (game === 'checkers') {
+    initCheckersView();
+    initData.board = JSON.stringify(ck.board);
+    initData.turn = 'red';
+  }
+  ref.set(initData);
+
+  ref.child('players/guest').on('value', snap => {
+    if (snap.val()) {
+      document.getElementById('waitingText').textContent = 'Opponent joined! Starting...';
+      ref.update({status:'playing'});
+      setTimeout(() => {
+        document.getElementById('roomModal').classList.add('hidden');
+        if (game === 'chess') { chessMode='online'; listenChessRoom(code,'white'); }
+        if (game === 'checkers') listenCkRoom(code,'red');
+      }, 1000);
+    }
+  });
+}
+
+document.getElementById('confirmJoinBtn').addEventListener('click', () => {
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if (code.length < 4) return;
+  const ref = db.ref(`rooms/${_roomGame}/${code}`);
+  ref.once('value', snap => {
+    const d = snap.val();
+    if (!d || d.status !== 'waiting') {
+      document.getElementById('roomError').classList.remove('hidden'); return;
+    }
+    ref.child('players/guest').set(getPlayerId());
+    ref.update({status:'playing'});
+    document.getElementById('roomModal').classList.add('hidden');
+    if (_roomGame === 'chess') { chessMode='online'; listenChessRoom(code,'black'); }
+    if (_roomGame === 'checkers') {
+      ck.board = JSON.parse(d.board); ck.turn = d.turn;
+      renderCheckers(); updateCkStatus();
+      listenCkRoom(code,'black');
+    }
+  });
+});
+
+document.getElementById('closeRoomModal').addEventListener('click', () => {
+  document.getElementById('roomModal').classList.add('hidden');
+  if (_roomGame === 'chess') { chessMode='ai'; document.querySelector('[data-chess-mode="ai"]').click(); }
+  if (_roomGame === 'checkers') { ck.mode='ai'; document.querySelector('[data-ck-mode="ai"]').click(); }
+});
+
+document.getElementById('copyRoomCodeBtn').addEventListener('click', () => {
+  const code = document.getElementById('displayRoomCode').textContent;
+  navigator.clipboard.writeText(code).catch(()=>{});
+  document.getElementById('copyRoomCodeBtn').textContent = 'Copied!';
+  setTimeout(()=>document.getElementById('copyRoomCodeBtn').textContent='Copy Code', 1500);
+});
+
+// ════════════════════════════════════════════════════════════
+// ██████  SNAKE & LADDERS
+// ════════════════════════════════════════════════════════════
+const SL = {
+  SNAKES: {97:78,95:56,88:24,62:18,48:26,36:6,32:10,99:54},
+  LADDERS: {1:38,4:14,9:31,28:84,40:59,51:67,63:81,71:91},
+  COLORS: ['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'],
+  players:[], current:0, rolling:false, gameOver:false, numPlayers:2
+};
+
+function initSnakeView() {
+  const numSel = document.querySelector('.count-btn.active');
+  SL.numPlayers = numSel ? parseInt(numSel.dataset.players) : 2;
+  renderSnakePlayerInputs();
+}
+
+document.querySelectorAll('.count-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.count-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    SL.numPlayers = parseInt(btn.dataset.players);
+    renderSnakePlayerInputs();
+  });
+});
+
+function renderSnakePlayerInputs() {
+  const container = document.getElementById('snakePlayerNames');
+  const names = ['Player 1','Player 2','Player 3','Player 4'];
+  container.innerHTML = '';
+  for (let i=0; i<SL.numPlayers; i++) {
+    const inp = document.createElement('input');
+    inp.type='text'; inp.className='player-name-input';
+    inp.placeholder = names[i]; inp.maxLength=16;
+    inp.style.borderLeft = `4px solid ${SL.COLORS[i]}`;
+    container.appendChild(inp);
+  }
+}
+
+document.getElementById('snakeStartBtn').addEventListener('click', startSnakeGame);
+document.getElementById('snakeResetBtn').addEventListener('click', () => {
+  document.getElementById('snakeGameCard').style.display='none';
+  document.getElementById('snakeSetupCard').style.display='';
+  initSnakeView();
+});
+
+function startSnakeGame() {
+  const inputs = document.querySelectorAll('.player-name-input');
+  SL.players = [];
+  inputs.forEach((inp, i) => {
+    SL.players.push({name: inp.value.trim() || `Player ${i+1}`, pos:1, color:SL.COLORS[i]});
+  });
+  SL.current = 0; SL.rolling = false; SL.gameOver = false;
+  document.getElementById('snakeSetupCard').style.display='none';
+  document.getElementById('snakeGameCard').style.display='';
+  updateSnakePlayerList();
+  drawSnakeBoard();
+  updateSnakeTurn();
+}
+
+document.getElementById('rollDiceBtn').addEventListener('click', rollDice);
+
+function rollDice() {
+  if (SL.rolling || SL.gameOver) return;
+  SL.rolling = true;
+  document.getElementById('rollDiceBtn').disabled = true;
+  const dFace = document.getElementById('diceFace');
+  const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+  let ticks = 0;
+  const interval = setInterval(() => {
+    dFace.textContent = faces[Math.floor(Math.random()*6)];
+    dFace.classList.add('dice-rolling');
+    ticks++;
+    if (ticks > 8) {
+      clearInterval(interval);
+      dFace.classList.remove('dice-rolling');
+      const roll = Math.floor(Math.random()*6)+1;
+      dFace.textContent = faces[roll-1];
+      moveSnakePlayer(roll);
+    }
+  }, 80);
+}
+
+function moveSnakePlayer(roll) {
+  const p = SL.players[SL.current];
+  let newPos = p.pos + roll;
+  if (newPos > 100) { newPos = p.pos; }
+  p.pos = newPos;
+
+  drawSnakeBoard();
+
+  setTimeout(() => {
+    if (SL.SNAKES[newPos]) {
+      p.pos = SL.SNAKES[newPos];
+      showSnakeMsg(`🐍 ${p.name} hit a snake! ${newPos} → ${p.pos}`);
+    } else if (SL.LADDERS[newPos]) {
+      p.pos = SL.LADDERS[newPos];
+      showSnakeMsg(`🪜 ${p.name} climbed a ladder! ${newPos} → ${p.pos}`);
+    } else {
+      showSnakeMsg(`${p.name} rolled ${roll} → square ${newPos}`);
+    }
+    drawSnakeBoard();
+    updateSnakePlayerList();
+
+    if (p.pos >= 100) {
+      SL.gameOver = true;
+      document.getElementById('snakeTurnInfo').textContent = `🏆 ${p.name} wins!`;
+      document.getElementById('rollDiceBtn').disabled = true;
+      SL.rolling = false;
+      return;
+    }
+
+    SL.current = (SL.current + 1) % SL.numPlayers;
+    SL.rolling = false;
+    document.getElementById('rollDiceBtn').disabled = false;
+    updateSnakeTurn();
+  }, 400);
+}
+
+function showSnakeMsg(msg) {
+  document.getElementById('snakeTurnInfo').textContent = msg;
+}
+
+function updateSnakeTurn() {
+  const p = SL.players[SL.current];
+  if (p) document.getElementById('snakeTurnInfo').textContent = `${p.name}'s turn — Roll!`;
+}
+
+function updateSnakePlayerList() {
+  const el = document.getElementById('snakePlayerList');
+  if (!el) return;
+  el.innerHTML = '';
+  SL.players.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = `snake-player-item${i===SL.current?' active-player':''}`;
+    item.innerHTML = `<span class="player-dot" style="background:${p.color}"></span><span>${p.name}</span><strong style="margin-left:auto">Sq.${p.pos}</strong>`;
+    el.appendChild(item);
+  });
+}
+
+function slCellCenter(n, cellSize) {
+  const idx = n-1, row = Math.floor(idx/10), col = idx%10;
+  const cRow = 9-row, cCol = (row%2===0) ? col : (9-col);
+  return {x: cCol*cellSize + cellSize/2, y: cRow*cellSize + cellSize/2};
+}
+
+function drawSnakeBoard() {
+  const canvas = document.getElementById('snakeCanvas');
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  const size = Math.min(wrap.offsetWidth || 520, 520);
+  canvas.width = size; canvas.height = size;
+  const cell = size/10;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,size,size);
+
+  // Draw cells
+  for (let n=1;n<=100;n++) {
+    const idx=n-1, row=Math.floor(idx/10), col=idx%10;
+    const cRow=9-row, cCol=(row%2===0)?col:(9-col);
+    const x=cCol*cell, y=cRow*cell;
+    if (SL.SNAKES[n]) ctx.fillStyle='rgba(255,80,80,0.18)';
+    else if (SL.LADDERS[n]) ctx.fillStyle='rgba(74,222,128,0.18)';
+    else ctx.fillStyle=(cRow+cCol)%2===0?'#0d1a30':'#0a1220';
+    ctx.fillRect(x,y,cell,cell);
+    ctx.strokeStyle='rgba(255,255,255,0.05)';
+    ctx.strokeRect(x,y,cell,cell);
+    ctx.fillStyle='rgba(150,170,220,0.45)';
+    ctx.font=`${Math.max(9,Math.floor(cell*0.22))}px Inter,sans-serif`;
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(n,x+3,y+2);
+  }
+
+  // Draw snakes
+  ctx.lineWidth=Math.max(4,cell*0.12); ctx.lineCap='round';
+  for (const [head,tail] of Object.entries(SL.SNAKES)) {
+    const h=slCellCenter(parseInt(head),cell), t=slCellCenter(tail,cell);
+    const g=ctx.createLinearGradient(h.x,h.y,t.x,t.y);
+    g.addColorStop(0,'#ff4444'); g.addColorStop(1,'#ff9944');
+    ctx.strokeStyle=g;
+    ctx.beginPath(); ctx.moveTo(h.x,h.y);
+    ctx.quadraticCurveTo((h.x+t.x)/2+(h.y-t.y)*0.4,(h.y+t.y)/2,t.x,t.y);
+    ctx.stroke();
+    ctx.fillStyle='#ff4444';
+    ctx.beginPath(); ctx.arc(h.x,h.y,cell*0.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ffcc00'; ctx.font=`${cell*0.18}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('👁',h.x,h.y);
+  }
+
+  // Draw ladders
+  ctx.lineWidth=Math.max(2,cell*0.07);
+  for (const [bottom,top] of Object.entries(SL.LADDERS)) {
+    const b=slCellCenter(parseInt(bottom),cell), t=slCellCenter(top,cell);
+    const g=ctx.createLinearGradient(b.x,b.y,t.x,t.y);
+    g.addColorStop(0,'#4ade80'); g.addColorStop(1,'#06b6d4');
+    ctx.strokeStyle=g;
+    const dx=t.x-b.x, dy=t.y-b.y, len=Math.sqrt(dx*dx+dy*dy);
+    const nx=(-dy/len)*cell*0.14, ny=(dx/len)*cell*0.14;
+    ctx.beginPath(); ctx.moveTo(b.x-nx,b.y-ny); ctx.lineTo(t.x-nx,t.y-ny); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(b.x+nx,b.y+ny); ctx.lineTo(t.x+nx,t.y+ny); ctx.stroke();
+    const rungs=Math.max(2,Math.floor(len/(cell*0.6)));
+    for (let i=1;i<rungs;i++) {
+      const rx=b.x+(dx/rungs)*i, ry=b.y+(dy/rungs)*i;
+      ctx.beginPath(); ctx.moveTo(rx-nx,ry-ny); ctx.lineTo(rx+nx,ry+ny); ctx.stroke();
+    }
+  }
+
+  // Draw players
+  ctx.save();
+  SL.players.forEach((p,i) => {
+    const pos = slCellCenter(Math.max(1,Math.min(100,p.pos)), cell);
+    const offsets = [{x:-cell*.14,y:-cell*.14},{x:cell*.14,y:-cell*.14},{x:-cell*.14,y:cell*.14},{x:cell*.14,y:cell*.14}];
+    const off = offsets[i] || {x:0,y:0};
+    ctx.shadowColor = p.color; ctx.shadowBlur = 14;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(pos.x+off.x,pos.y+off.y,cell*.2,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0; ctx.fillStyle='#000';
+    ctx.font=`bold ${cell*.18}px Inter`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(i+1,pos.x+off.x,pos.y+off.y);
+  });
+  ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════
+// ██████  DOMINOES
+// ════════════════════════════════════════════════════════════
+const DOM = {
+  playerHand:[], aiHand:[], boneyard:[], boardTiles:[],
+  leftEnd:null, rightEnd:null, turn:'player',
+  mode:'ai', gameOver:false, selected:null, passCount:0
+};
+
+const PIP_MAP = {
+  0:[],
+  1:['mc'],
+  2:['tl','br'],
+  3:['tl','mc','br'],
+  4:['tl','tr','bl','br'],
+  5:['tl','tr','mc','bl','br'],
+  6:['tl','tr','ml','mr','bl','br']
+};
+
+function createTileSet() {
+  const tiles=[];
+  for (let a=0;a<=6;a++) for (let b=a;b<=6;b++) tiles.push({a,b,id:`${a}-${b}`});
+  return tiles;
+}
+
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function startDominoGame(mode) {
+  DOM.mode=mode; DOM.gameOver=false; DOM.passCount=0;
+  DOM.boardTiles=[]; DOM.leftEnd=null; DOM.rightEnd=null; DOM.selected=null;
+  const tiles=shuffle(createTileSet());
+  DOM.playerHand=tiles.slice(0,7);
+  DOM.aiHand=tiles.slice(7,14);
+  DOM.boneyard=tiles.slice(14);
+  DOM.turn='player';
+  document.getElementById('dominoSetup').style.display='none';
+  document.getElementById('dominoBoardEmpty').style.display='';
+  renderDominoHands();
+  updateDominoStatus('Your turn — pick a tile to play');
+  updateBoneyardCount();
+}
+
+document.getElementById('dominoVsAiBtn').addEventListener('click', ()=>startDominoGame('ai'));
+document.getElementById('dominoLocalBtn').addEventListener('click', ()=>startDominoGame('local'));
+
+function makeDominoTileEl(tile, faceDown=false) {
+  const el=document.createElement('div');
+  el.className=`domino-tile${faceDown?' face-down':''}`;
+  el.dataset.id=tile.id;
+  if (faceDown) {
+    el.innerHTML=`<div class="domino-half"></div><div class="domino-divider-v"></div><div class="domino-half"></div>`;
+    return el;
+  }
+  el.innerHTML=`
+    <div class="domino-half">${makePips(tile.a)}</div>
+    <div class="domino-divider-v"></div>
+    <div class="domino-half">${makePips(tile.b)}</div>
+  `;
+  return el;
+}
+
+function makePips(n) {
+  const positions=PIP_MAP[n]||[];
+  const all=['tl','tc','tr','ml','mc','mr','bl','bc','br'];
+  return all.map(pos=>positions.includes(pos)?`<span class="pip ${pos}"></span>`:`<span class="pip-empty ${pos}" style="grid-area:${pos}"></span>`).join('');
+}
+
+function renderDominoHands() {
+  const playerEl=document.getElementById('playerHand');
+  const aiEl=document.getElementById('aiHand');
+  playerEl.innerHTML=''; aiEl.innerHTML='';
+  document.getElementById('aiHandCount').textContent=DOM.aiHand.length;
+
+  DOM.playerHand.forEach(tile=>{
+    const el=makeDominoTileEl(tile);
+    if (DOM.selected===tile.id) el.classList.add('selected-tile');
+    el.addEventListener('click',()=>selectDominoTile(tile.id));
+    playerEl.appendChild(el);
+  });
+
+  DOM.aiHand.forEach(tile=>{
+    const el=makeDominoTileEl(tile, true);
+    aiEl.appendChild(el);
+  });
+}
+
+function renderDominoBoard() {
+  const boardEl=document.getElementById('dominoBoard');
+  boardEl.innerHTML='';
+  document.getElementById('dominoBoardEmpty').style.display=DOM.boardTiles.length?'none':'';
+  DOM.boardTiles.forEach(bt=>{
+    const el=makeDominoTileEl({a:bt.da,b:bt.db,id:bt.id});
+    el.classList.add('on-board','horizontal');
+    el.querySelector('.domino-divider-v').className='domino-divider-h';
+    el.style.flexDirection='row';
+    boardEl.appendChild(el);
+  });
+  boardEl.scrollLeft=boardEl.scrollWidth;
+}
+
+function selectDominoTile(id) {
+  if (DOM.turn!=='player'||DOM.gameOver) return;
+  if (DOM.selected===id) { DOM.selected=null; renderDominoHands(); return; }
+  const tile=DOM.playerHand.find(t=>t.id===id);
+  if (!tile) return;
+
+  if (DOM.boardTiles.length===0) {
+    DOM.selected=id; renderDominoHands();
+    updateDominoStatus('Click the tile again to play it as the first tile');
+    return;
+  }
+
+  // Try to play it
+  const played=tryPlayTile(tile, DOM.playerHand, 'player');
+  if (!played) {
+    DOM.selected=id; renderDominoHands();
+    updateDominoStatus('This tile cannot be played — try drawing or select another');
+  }
+}
+
+function tryPlayTile(tile, hand, who) {
+  if (DOM.boardTiles.length===0) {
+    if (DOM.selected!==tile.id && who==='player') return false;
+    // First tile
+    placeTile(tile, tile.a, tile.b);
+    DOM.leftEnd=tile.a; DOM.rightEnd=tile.b;
+    hand.splice(hand.indexOf(tile),1);
+    DOM.selected=null;
+    afterTilePlay(who);
+    return true;
+  }
+
+  let playedA=tile.a, playedB=tile.b, flipped=false;
+  let side=null;
+
+  if (tile.a===DOM.leftEnd||tile.b===DOM.leftEnd) {
+    if (tile.b===DOM.leftEnd) { playedA=tile.b; playedB=tile.a; flipped=true; }
+    DOM.leftEnd=playedA;
+    side='left';
+  } else if (tile.a===DOM.rightEnd||tile.b===DOM.rightEnd) {
+    if (tile.a===DOM.rightEnd) { playedA=tile.a; playedB=tile.b; }
+    else { playedA=tile.b; playedB=tile.a; flipped=true; }
+    DOM.rightEnd=playedB;
+    side='right';
+  } else {
+    return false;
+  }
+
+  if (side==='left') {
+    DOM.boardTiles.unshift({id:tile.id, da:playedA, db:playedB});
+  } else {
+    DOM.boardTiles.push({id:tile.id, da:playedA, db:playedB});
+  }
+
+  hand.splice(hand.indexOf(tile),1);
+  DOM.selected=null;
+  afterTilePlay(who);
+  return true;
+}
+
+function placeTile(tile, a, b) {
+  DOM.boardTiles.push({id:tile.id, da:a, db:b});
+}
+
+function afterTilePlay(who) {
+  DOM.passCount=0;
+  renderDominoBoard();
+  renderDominoHands();
+  updateBoneyardCount();
+
+  if (DOM.playerHand.length===0||DOM.aiHand.length===0) {
+    const winner=DOM.playerHand.length===0?'You win':'AI wins';
+    updateDominoStatus(`🏆 ${winner}! Game over.`);
+    DOM.gameOver=true; return;
+  }
+
+  if (who==='player') {
+    DOM.turn='ai';
+    updateDominoStatus('AI is thinking...');
+    setTimeout(aiDominoTurn, 900);
+  } else {
+    DOM.turn='player';
+    updateDominoStatus('Your turn — pick a tile');
+  }
+}
+
+function aiDominoTurn() {
+  if (DOM.gameOver) return;
+  // Find playable tile (prefer highest value)
+  const playable=DOM.aiHand.filter(t=>canPlay(t));
+  if (playable.length>0) {
+    playable.sort((a,b)=>(b.a+b.b)-(a.a+a.b));
+    tryPlayTile(playable[0], DOM.aiHand, 'ai');
+    return;
+  }
+  // Draw
+  if (DOM.boneyard.length>0) {
+    const drawn=DOM.boneyard.pop();
+    DOM.aiHand.push(drawn);
+    updateBoneyardCount();
+    renderDominoHands();
+    updateDominoStatus('AI drew a tile...');
+    setTimeout(aiDominoTurn,600);
+    return;
+  }
+  // Pass
+  DOM.passCount++;
+  if (DOM.passCount>=2) {
+    endDominoByCount();
+  } else {
+    DOM.turn='player';
+    updateDominoStatus('AI passed — your turn');
+  }
+}
+
+function canPlay(tile) {
+  if (DOM.boardTiles.length===0) return true;
+  return tile.a===DOM.leftEnd||tile.b===DOM.leftEnd||tile.a===DOM.rightEnd||tile.b===DOM.rightEnd;
+}
+
+document.getElementById('dominoDrawBtn').addEventListener('click', ()=>{
+  if (DOM.turn!=='player'||DOM.gameOver) return;
+  if (DOM.boneyard.length===0) {
+    DOM.passCount++;
+    if (DOM.passCount>=2) { endDominoByCount(); return; }
+    DOM.turn='ai';
+    updateDominoStatus('You passed — AI thinking...');
+    setTimeout(aiDominoTurn,600);
+    return;
+  }
+  const tile=DOM.boneyard.pop();
+  DOM.playerHand.push(tile);
+  DOM.selected=null;
+  renderDominoHands();
+  updateBoneyardCount();
+  updateDominoStatus(`Drew a tile [${tile.a}|${tile.b}] — now play or draw again`);
+});
+
+function endDominoByCount() {
+  const pScore=DOM.playerHand.reduce((s,t)=>s+t.a+t.b,0);
+  const aScore=DOM.aiHand.reduce((s,t)=>s+t.a+t.b,0);
+  let msg;
+  if (pScore<aScore) msg=`🏆 You win! (${pScore} vs ${aScore})`;
+  else if (aScore<pScore) msg=`AI wins! (${aScore} vs ${pScore})`;
+  else msg=`Tie! Both have ${pScore} points.`;
+  updateDominoStatus(msg);
+  DOM.gameOver=true;
+}
+
+function updateDominoStatus(msg) {
+  const el=document.getElementById('dominoStatus');
+  if (el) el.textContent=msg;
+}
+
+function updateBoneyardCount() {
+  const el=document.getElementById('boneyardCount');
+  if (el) el.textContent=DOM.boneyard.length;
+}
+
+// ════════════════════════════════════════════════════════════
+// ██████  WINDOW RESIZE — redraw canvas
+// ════════════════════════════════════════════════════════════
+window.addEventListener('resize', ()=>{
+  if (document.getElementById('view-snake').classList.contains('active')) drawSnakeBoard();
+  if (document.getElementById('view-chess').classList.contains('active') && chessBoard) {
+    const size=Math.min(520,window.innerWidth-(window.innerWidth>860?340:32));
+    $('#chessboard').css('width',size+'px'); chessBoard.resize();
+  }
+  if (document.getElementById('view-checkers').classList.contains('active')) {
+    const s=Math.min(520,window.innerWidth-(window.innerWidth>860?320:32));
+    document.getElementById('checkersGrid').style.width=s+'px';
+  }
+});
+
+// ── INIT ─────────────────────────────────────────────────────
+(function init() {
+  renderSnakePlayerInputs();
+  // Default chess view will init when user clicks
+})();

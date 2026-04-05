@@ -2,223 +2,337 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Youooo Board Academy</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Youooo Games — Chess · Checkers · Snake & Ladders · Dominoes</title>
+  <meta name="description" content="Free online board games — Chess, Checkers, Snake & Ladders, Dominoes. Play vs AI, local 2-player, or online with friends." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
   <link rel="stylesheet" href="style.css" />
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.css"
-  />
 </head>
 <body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div>
-        <h1>♟ Youooo Board Academy</h1>
-        <p class="subtitle">Play chess and checkers on one platform</p>
-      </div>
-      <div class="badge">Chess + Checkers V1</div>
-    </header>
 
-    <div class="top-switchers">
-      <div class="tabbar">
-        <button id="playTabBtn" class="tab-btn active">Play</button>
-        <button id="academyTabBtn" class="tab-btn">Academy</button>
-      </div>
-
-      <div class="gamebar">
-        <button id="chessGameBtn" class="game-btn active-game">Chess</button>
-        <button id="checkersGameBtn" class="game-btn">Checkers</button>
-      </div>
-    </div>
-
-    <main class="layout">
-      <section class="board-panel">
-        <div class="board-toolbar">
-          <div class="mode-pill" id="currentSectionLabel">Chess • Play Mode</div>
-          <div class="board-actions">
-            <button id="flipBtn" class="secondary small-btn">Flip Board</button>
-            <button id="resetBtn" class="danger small-btn">Reset</button>
-          </div>
-        </div>
-
-        <div class="board-wrap">
-          <div id="chessBoardWrap">
-            <div id="board"></div>
-          </div>
-
-          <div id="checkersBoardWrap" class="hidden">
-            <div id="checkersBoard" class="checkers-board"></div>
-          </div>
-        </div>
-
-        <div class="status-card">
-          <h3>Status</h3>
-          <div id="status">Loading...</div>
-        </div>
-
-        <div class="history-card">
-          <h3>Move History</h3>
-          <ol id="moveHistory" class="history"></ol>
-        </div>
-      </section>
-
-      <aside class="side-panel">
-        <!-- CHESS PLAY PANEL -->
-        <div id="playPanel" class="panel active-panel">
-          <div id="chessPlayControls">
-            <div class="card">
-              <h2>Chess Modes</h2>
-              <div class="controls">
-                <button id="aiBtn">Play vs AI</button>
-                <button id="localBtn">2 Players</button>
-                <button id="createRoomBtn">Create Room</button>
-                <button id="joinRoomBtn">Join Room</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <h2>Chess AI Difficulty</h2>
-              <div class="difficulty-grid">
-                <button class="difficulty-btn active-difficulty" data-difficulty="easy">Easy</button>
-                <button class="difficulty-btn" data-difficulty="medium">Medium</button>
-                <button class="difficulty-btn" data-difficulty="hard">Hard</button>
-                <button class="difficulty-btn" data-difficulty="expert">Expert</button>
-              </div>
-              <div id="aiInfo" class="note-box">
-                Easy uses weak move selection. Medium and above use board evaluation and search.
-              </div>
-            </div>
-
-            <div class="card">
-              <h2>Online Room</h2>
-              <input id="roomInput" type="text" placeholder="Enter room code" />
-              <div class="room-row">
-                <span class="label">Current room:</span>
-                <span id="roomCode">None</span>
-              </div>
-              <div class="room-row">
-                <span class="label">Server:</span>
-                <span id="serverState">Connecting...</span>
-              </div>
-            </div>
-          </div>
-
-          <div id="checkersPlayControls" class="hidden">
-            <div class="card">
-              <h2>Checkers Modes</h2>
-              <div class="controls">
-                <button id="checkersAiBtn">Play vs AI</button>
-                <button id="checkersLocalBtn">2 Players</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <h2>Checkers AI Difficulty</h2>
-              <div class="difficulty-grid">
-                <button class="checkers-difficulty-btn active-difficulty" data-difficulty="easy">Easy</button>
-                <button class="checkers-difficulty-btn" data-difficulty="medium">Medium</button>
-                <button class="checkers-difficulty-btn" data-difficulty="hard">Hard</button>
-                <button class="checkers-difficulty-btn" data-difficulty="expert">Expert</button>
-              </div>
-              <div id="checkersAiInfo" class="note-box">
-                Basic checkers AI is included in this V1.
-              </div>
-            </div>
-
-            <div class="card">
-              <h2>Checkers Notes</h2>
-              <ul class="help-list">
-                <li>Local play works</li>
-                <li>AI works</li>
-                <li>Kings work</li>
-                <li>Checkers online mode comes in V2</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- ACADEMY PANEL -->
-        <div id="academyPanel" class="panel">
-          <div id="chessAcademyControls">
-            <div class="card">
-              <h2>Academy Levels</h2>
-              <div class="level-tabs">
-                <button class="level-btn active-level" data-level="beginner">Beginner</button>
-                <button class="level-btn" data-level="intermediate">Intermediate</button>
-                <button class="level-btn" data-level="advanced">Advanced</button>
-                <button class="level-btn" data-level="expert">Expert</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="academy-header-row">
-                <h2>Lessons</h2>
-                <span id="academyProgressBadge" class="progress-badge">0% Complete</span>
-              </div>
-              <div id="lessonList" class="lesson-list"></div>
-            </div>
-
-            <div class="card">
-              <h2 id="lessonTitle">Select a lesson</h2>
-              <p id="lessonSummary" class="lesson-summary">Choose a lesson to begin.</p>
-
-              <div class="lesson-meta">
-                <span id="lessonLevelTag" class="meta-tag">Level</span>
-                <span id="lessonTypeTag" class="meta-tag">Type</span>
-                <span id="lessonStarsTag" class="meta-tag">Stars: 0</span>
-              </div>
-
-              <div id="coachBox" class="coach-box">
-                Welcome to the academy. Pick a lesson from the list.
-              </div>
-
-              <div class="lesson-controls">
-                <button id="prevLessonBtn" class="secondary">Previous</button>
-                <button id="hintBtn">Hint</button>
-                <button id="retryLessonBtn" class="danger">Retry</button>
-                <button id="nextLessonBtn">Next</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <h2>Special Training</h2>
-              <div class="controls">
-                <button id="openingTrainerBtn">Opening Trainer</button>
-                <button id="endgameTrainerBtn">Endgame Trainer</button>
-                <button id="dailyChallengeBtn" class="secondary">Daily Challenge</button>
-                <button id="reviewModeBtn" class="danger">Review Current</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <h2>Progress</h2>
-              <div id="progressStats" class="progress-stats"></div>
-            </div>
-          </div>
-
-          <div id="checkersAcademyControls" class="hidden">
-            <div class="card">
-              <h2>Checkers Academy</h2>
-              <p class="lesson-summary">
-                Checkers academy will come in V2. For now, use Play mode to practice movement,
-                captures, kings, and board control.
-              </p>
-              <div class="note-box">
-                Current V1 checkers includes playable local mode and AI mode.
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </main>
+  <!-- Animated background -->
+  <div class="bg-layer" aria-hidden="true">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+    <div class="grid-bg"></div>
   </div>
 
+  <!-- ══ ONLINE ROOM MODAL ══════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="roomModal">
+    <div class="modal-box">
+      <button class="modal-close" id="closeRoomModal">✕</button>
+
+      <div id="createRoomPanel" class="room-panel hidden">
+        <div class="room-icon">🔗</div>
+        <h3>Room Created</h3>
+        <p class="room-label">Share this code with your friend:</p>
+        <div class="room-code-display" id="displayRoomCode">—</div>
+        <div class="room-waiting">
+          <div class="waiting-dot"></div>
+          <span id="waitingText">Waiting for opponent...</span>
+        </div>
+        <button class="btn-secondary" id="copyRoomCodeBtn">Copy Code</button>
+      </div>
+
+      <div id="joinRoomPanel" class="room-panel hidden">
+        <div class="room-icon">🎮</div>
+        <h3>Join a Game</h3>
+        <p class="room-label">Enter the room code from your friend:</p>
+        <input class="room-input" type="text" id="joinCodeInput" placeholder="e.g. XKRT42" maxlength="6" autocomplete="off" />
+        <button class="btn-primary" id="confirmJoinBtn">Join Room</button>
+        <p class="room-error hidden" id="roomError">Room not found or already full.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HUB VIEW ═══════════════════════════════════════════════ -->
+  <div id="view-hub" class="view active">
+    <header class="hub-header">
+      <div class="hub-logo">
+        <span class="logo-mark">Y</span>
+        <div>
+          <div class="logo-title">Youooo Games</div>
+          <div class="logo-sub">Play classic board games — online & offline</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="game-hub-grid">
+
+      <div class="game-card chess-card" data-game="chess">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">♟</div>
+        <h2 class="game-card-name">Chess</h2>
+        <p class="game-card-desc">Strategy, tactics & AI challenge</p>
+        <div class="game-tags">
+          <span class="tag">vs AI</span>
+          <span class="tag">2 Players</span>
+          <span class="tag tag-online">Online</span>
+        </div>
+        <button class="play-btn">Play Chess</button>
+      </div>
+
+      <div class="game-card checkers-card" data-game="checkers">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">⬡</div>
+        <h2 class="game-card-name">Checkers</h2>
+        <p class="game-card-desc">Classic draughts with online rooms</p>
+        <div class="game-tags">
+          <span class="tag">vs AI</span>
+          <span class="tag">2 Players</span>
+          <span class="tag tag-online">Online</span>
+        </div>
+        <button class="play-btn">Play Checkers</button>
+      </div>
+
+      <div class="game-card snake-card" data-game="snake">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">🎲</div>
+        <h2 class="game-card-name">Snake & Ladders</h2>
+        <p class="game-card-desc">Roll the dice, climb or slide!</p>
+        <div class="game-tags">
+          <span class="tag">1–4 Players</span>
+          <span class="tag">Family Fun</span>
+        </div>
+        <button class="play-btn">Play Now</button>
+      </div>
+
+      <div class="game-card domino-card" data-game="domino">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">🁣</div>
+        <h2 class="game-card-name">Dominoes</h2>
+        <p class="game-card-desc">Match tiles, block your opponent</p>
+        <div class="game-tags">
+          <span class="tag">vs AI</span>
+          <span class="tag">2 Players</span>
+        </div>
+        <button class="play-btn">Play Dominoes</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ CHESS VIEW ═════════════════════════════════════════════ -->
+  <div id="view-chess" class="view">
+    <div class="game-topbar chess-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">♟ Chess</span>
+      <span class="online-badge hidden" id="chessOnlineBadge">🟢 Online</span>
+    </div>
+
+    <div class="chess-layout">
+      <div class="chess-sidebar">
+        <div class="sidebar-card">
+          <h3>Mode</h3>
+          <div class="btn-group">
+            <button class="mode-btn active" data-chess-mode="ai">vs AI</button>
+            <button class="mode-btn" data-chess-mode="local">2 Players</button>
+            <button class="mode-btn" data-chess-mode="create">Create Room</button>
+            <button class="mode-btn" data-chess-mode="join">Join Room</button>
+          </div>
+        </div>
+
+        <div class="sidebar-card" id="chessDiffCard">
+          <h3>AI Difficulty</h3>
+          <div class="btn-group">
+            <button class="diff-btn active" data-chess-diff="easy">Easy</button>
+            <button class="diff-btn" data-chess-diff="medium">Medium</button>
+            <button class="diff-btn" data-chess-diff="hard">Hard</button>
+            <button class="diff-btn" data-chess-diff="expert">Expert</button>
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>Status</h3>
+          <div class="status-display" id="chessStatus">White's turn</div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="card-row">
+            <h3>Move History</h3>
+            <button class="icon-btn" id="chessResetBtn" title="Reset">↺</button>
+          </div>
+          <ol class="move-history" id="chessMoveHistory"></ol>
+        </div>
+      </div>
+
+      <div class="board-center">
+        <div id="chessBoardWrap">
+          <div id="chessboard"></div>
+        </div>
+        <button class="flip-btn" id="chessFlipBtn">⇅ Flip Board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CHECKERS VIEW ══════════════════════════════════════════ -->
+  <div id="view-checkers" class="view">
+    <div class="game-topbar checkers-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">⬡ Checkers</span>
+      <span class="online-badge hidden" id="ckOnlineBadge">🟢 Online</span>
+    </div>
+
+    <div class="chess-layout">
+      <div class="chess-sidebar">
+        <div class="sidebar-card">
+          <h3>Mode</h3>
+          <div class="btn-group">
+            <button class="mode-btn active" data-ck-mode="ai">vs AI</button>
+            <button class="mode-btn" data-ck-mode="local">2 Players</button>
+            <button class="mode-btn" data-ck-mode="create">Create Room</button>
+            <button class="mode-btn" data-ck-mode="join">Join Room</button>
+          </div>
+        </div>
+
+        <div class="sidebar-card" id="ckDiffCard">
+          <h3>AI Difficulty</h3>
+          <div class="btn-group">
+            <button class="diff-btn active" data-ck-diff="easy">Easy</button>
+            <button class="diff-btn" data-ck-diff="medium">Medium</button>
+            <button class="diff-btn" data-ck-diff="hard">Hard</button>
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>Status</h3>
+          <div class="status-display" id="ckStatus">Red's turn</div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="card-row">
+            <h3>Captures</h3>
+            <button class="icon-btn" id="ckResetBtn" title="Reset">↺</button>
+          </div>
+          <div class="captures-display">
+            <span>🔴 Red: <strong id="ckRedCaptures">0</strong></span>
+            <span>⚫ Black: <strong id="ckBlackCaptures">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="board-center">
+        <div class="ck-board-wrap">
+          <div id="checkersGrid" class="ck-board"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SNAKE & LADDERS VIEW ═══════════════════════════════════ -->
+  <div id="view-snake" class="view">
+    <div class="game-topbar snake-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">🎲 Snake & Ladders</span>
+    </div>
+
+    <div class="snake-layout">
+      <div class="snake-sidebar">
+
+        <div class="sidebar-card" id="snakeSetupCard">
+          <h3>Players</h3>
+          <div class="player-count-row">
+            <button class="count-btn active" data-players="2">2</button>
+            <button class="count-btn" data-players="3">3</button>
+            <button class="count-btn" data-players="4">4</button>
+          </div>
+          <div id="snakePlayerNames" class="player-names-grid"></div>
+          <button class="btn-primary full mt12" id="snakeStartBtn">Start Game</button>
+        </div>
+
+        <div class="sidebar-card" id="snakeGameCard" style="display:none">
+          <div id="snakeTurnInfo" class="turn-info">Roll the dice!</div>
+          <button class="dice-btn" id="rollDiceBtn">
+            <span class="dice-face" id="diceFace">🎲</span>
+            <span>Roll Dice</span>
+          </button>
+          <div id="snakePlayerList" class="snake-player-list"></div>
+          <button class="btn-secondary full mt12" id="snakeResetBtn">New Game</button>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>Legend</h3>
+          <div class="legend-row"><span class="legend-snake">▬</span> Snake (slide down)</div>
+          <div class="legend-row"><span class="legend-ladder">▮</span> Ladder (climb up)</div>
+        </div>
+
+      </div>
+
+      <div class="snake-board-wrap">
+        <canvas id="snakeCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DOMINOES VIEW ══════════════════════════════════════════ -->
+  <div id="view-domino" class="view">
+    <div class="game-topbar domino-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">🁣 Dominoes</span>
+    </div>
+
+    <div class="domino-layout">
+
+      <!-- AI hand (top, face-down) -->
+      <div class="domino-ai-area">
+        <div class="domino-label">AI Hand: <strong id="aiHandCount">0</strong> tiles</div>
+        <div id="aiHand" class="ai-hand-row"></div>
+      </div>
+
+      <!-- Board -->
+      <div class="domino-board-wrap">
+        <div class="domino-board-info">
+          <span>Boneyard: <strong id="boneyardCount">0</strong></span>
+          <span id="dominoStatus" class="domino-status-txt">Start by picking a tile</span>
+          <button class="btn-secondary small-btn" id="dominoDrawBtn">Draw Tile</button>
+        </div>
+        <div id="dominoBoard" class="domino-board">
+          <p class="domino-empty-msg" id="dominoBoardEmpty">No tiles played yet. Play the first tile from your hand below.</p>
+        </div>
+      </div>
+
+      <!-- Player hand (bottom) -->
+      <div class="domino-player-area">
+        <div class="domino-label">Your Hand <span class="domino-hint">(click a tile to play it)</span></div>
+        <div id="playerHand" class="player-hand-row"></div>
+      </div>
+
+      <!-- New game overlay -->
+      <div class="domino-setup-overlay" id="dominoSetup">
+        <div class="domino-setup-box">
+          <div class="setup-icon">🁣</div>
+          <h3>Dominoes</h3>
+          <p>Match tiles on both ends. First to empty their hand wins!</p>
+          <div class="btn-group">
+            <button class="btn-primary" data-domino-mode="ai" id="dominoVsAiBtn">vs AI</button>
+            <button class="btn-secondary" data-domino-mode="local" id="dominoLocalBtn">Pass & Play</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.js"></script>
-  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyDUipT-BFyt_h2jMc3UjiHq9G010zP71dg",
+      authDomain: "youooo-chess.firebaseapp.com",
+      databaseURL: "https://youooo-chess-default-rtdb.firebaseio.com/",
+      projectId: "youooo-chess",
+      storageBucket: "youooo-chess.firebasestorage.app",
+      messagingSenderId: "726873828616",
+      appId: "1:726873828616:web:829a600819024bcf2910bd"
+    });
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
