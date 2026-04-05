@@ -51,7 +51,7 @@ function initChessView() {
   chessGame = new Chess();
   chessBoard = Chessboard('chessboard', {
     draggable: true, position: 'start',
-    pieceTheme: 'https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/img/chesspieces/wikipedia/{piece}.png',
+    pieceTheme: 'https://raw.githubusercontent.com/oakmac/chessboardjs/master/website/img/chesspieces/wikipedia/{piece}.png',
     onDragStart: chOnDragStart, onDrop: chOnDrop,
     onSnapEnd: () => chessBoard.position(chessGame.fen()),
   });

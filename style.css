@@ -320,16 +320,18 @@ body {
   display:flex;flex-direction:column;
   height:calc(100vh - 56px);padding:12px 16px;gap:12px;
   position:relative;max-width:1000px;margin:0 auto;width:100%;
+  overflow:hidden;
 }
-.domino-ai-area,.domino-player-area{flex-shrink:0;}
-.domino-board-wrap{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0;}
+.domino-ai-area,.domino-player-area{flex-shrink:0;overflow:hidden;}
+.domino-board-wrap{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden;}
 .domino-board-info{display:flex;align-items:center;gap:14px;font-size:.88rem;color:var(--muted);flex-wrap:wrap;}
 .domino-status-txt{color:var(--text);font-weight:600;}
 .domino-board{
-  flex:1;overflow-x:auto;overflow-y:auto;
-  display:flex;align-items:center;gap:4px;padding:16px;
+  height:140px;flex-shrink:0;
+  overflow-x:auto;overflow-y:hidden;
+  display:flex;align-items:center;gap:6px;padding:12px 16px;
   background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:16px;
-  min-height:130px;flex-wrap:nowrap;
+  flex-wrap:nowrap;
 }
 .domino-empty-msg{color:var(--muted);font-size:.9rem;text-align:center;width:100%;}
 .domino-label{font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:8px;}
