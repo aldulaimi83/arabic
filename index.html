@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Youooo Games — Chess · Checkers · Snake & Ladders · Dominoes</title>
-  <meta name="description" content="Free online board games — Chess, Checkers, Snake & Ladders, Dominoes. Play vs AI, local 2-player, or online with friends." />
+  <title>Youooo Games — Chess · Checkers · Gems Crush · 2048</title>
+  <meta name="description" content="Free online games — Chess, Checkers, Gems Crush (match-3), and 2048. Play vs AI, local, or online with friends." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&family=Rajdhani:wght@700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
@@ -23,7 +23,6 @@
 <div id="splash"><img src="youooo_logo.png" alt="Youooo" /></div>
 <script>(function(){var s=document.getElementById('splash');setTimeout(function(){s.classList.add('fade-out');setTimeout(function(){s.style.display='none'},800)},5000)})()</script>
 
-
   <!-- Animated background -->
   <div class="bg-layer" aria-hidden="true">
     <div class="orb orb1"></div>
@@ -36,7 +35,6 @@
   <div class="modal-overlay hidden" id="roomModal">
     <div class="modal-box">
       <button class="modal-close" id="closeRoomModal">✕</button>
-
       <div id="createRoomPanel" class="room-panel hidden">
         <div class="room-icon">🔗</div>
         <h3>Room Created</h3>
@@ -48,7 +46,6 @@
         </div>
         <button class="btn-secondary" id="copyRoomCodeBtn">Copy Code</button>
       </div>
-
       <div id="joinRoomPanel" class="room-panel hidden">
         <div class="room-icon">🎮</div>
         <h3>Join a Game</h3>
@@ -67,7 +64,7 @@
         <img src="youooo_logo.png" alt="Youooo" style="height:52px;width:auto;flex-shrink:0;" />
         <div>
           <div class="logo-title" style="font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:2px;">Youooo Games</div>
-          <div class="logo-sub">Play classic board games — online & offline</div>
+          <div class="logo-sub">4 games · Play free · Online & Offline</div>
         </div>
       </div>
     </header>
@@ -100,30 +97,42 @@
         <button class="play-btn">Play Checkers</button>
       </div>
 
-      <div class="game-card snake-card" data-game="snake">
+      <div class="game-card gems-card" data-game="gems">
         <div class="card-glow"></div>
-        <div class="game-card-icon">🎲</div>
-        <h2 class="game-card-name">Snake & Ladders</h2>
-        <p class="game-card-desc">Roll the dice, climb or slide!</p>
+        <div class="game-card-icon">💎</div>
+        <h2 class="game-card-name">Gems Crush</h2>
+        <p class="game-card-desc">Swap & match gems to score big!</p>
         <div class="game-tags">
-          <span class="tag">1–4 Players</span>
-          <span class="tag">Family Fun</span>
+          <span class="tag">Puzzle</span>
+          <span class="tag">Match-3</span>
+          <span class="tag tag-new">New!</span>
         </div>
-        <button class="play-btn">Play Now</button>
+        <button class="play-btn">Play Gems</button>
       </div>
 
-      <div class="game-card domino-card" data-game="domino">
+      <div class="game-card t2048-card" data-game="t2048">
         <div class="card-glow"></div>
-        <div class="game-card-icon">🁣</div>
-        <h2 class="game-card-name">Dominoes</h2>
-        <p class="game-card-desc">Match tiles, block your opponent</p>
+        <div class="game-card-icon">🔢</div>
+        <h2 class="game-card-name">2048</h2>
+        <p class="game-card-desc">Slide tiles, merge numbers, reach 2048!</p>
         <div class="game-tags">
-          <span class="tag">vs AI</span>
-          <span class="tag">2 Players</span>
+          <span class="tag">Puzzle</span>
+          <span class="tag">High Score</span>
+          <span class="tag tag-new">New!</span>
         </div>
-        <button class="play-btn">Play Dominoes</button>
+        <button class="play-btn">Play 2048</button>
       </div>
 
+    </div>
+
+    <div class="hub-footer">
+      <a href="https://youooo.com" target="_blank" rel="noopener">Username Checker</a>
+      <span>·</span>
+      <a href="https://resume.youooo.com" target="_blank" rel="noopener">Resume Builder</a>
+      <span>·</span>
+      <a href="https://linux.youooo.com" target="_blank" rel="noopener">Learn Linux</a>
+      <span>·</span>
+      <a href="https://dari.youooo.com" target="_blank" rel="noopener">Dari Real Estate</a>
     </div>
   </div>
 
@@ -134,7 +143,6 @@
       <span class="game-topbar-title">♟ Chess</span>
       <span class="online-badge hidden" id="chessOnlineBadge">🟢 Online</span>
     </div>
-
     <div class="chess-layout">
       <div class="chess-sidebar">
         <div class="sidebar-card">
@@ -146,7 +154,6 @@
             <button class="mode-btn" data-chess-mode="join">Join Room</button>
           </div>
         </div>
-
         <div class="sidebar-card" id="chessDiffCard">
           <h3>AI Difficulty</h3>
           <div class="btn-group">
@@ -156,12 +163,10 @@
             <button class="diff-btn" data-chess-diff="expert">Expert</button>
           </div>
         </div>
-
         <div class="sidebar-card">
           <h3>Status</h3>
           <div class="status-display" id="chessStatus">White's turn</div>
         </div>
-
         <div class="sidebar-card">
           <div class="card-row">
             <h3>Move History</h3>
@@ -170,7 +175,6 @@
           <ol class="move-history" id="chessMoveHistory"></ol>
         </div>
       </div>
-
       <div class="board-center">
         <div id="chessBoardWrap">
           <div id="chessboard"></div>
@@ -187,7 +191,6 @@
       <span class="game-topbar-title">⬡ Checkers</span>
       <span class="online-badge hidden" id="ckOnlineBadge">🟢 Online</span>
     </div>
-
     <div class="chess-layout">
       <div class="chess-sidebar">
         <div class="sidebar-card">
@@ -199,7 +202,6 @@
             <button class="mode-btn" data-ck-mode="join">Join Room</button>
           </div>
         </div>
-
         <div class="sidebar-card" id="ckDiffCard">
           <h3>AI Difficulty</h3>
           <div class="btn-group">
@@ -208,12 +210,10 @@
             <button class="diff-btn" data-ck-diff="hard">Hard</button>
           </div>
         </div>
-
         <div class="sidebar-card">
           <h3>Status</h3>
           <div class="status-display" id="ckStatus">Red's turn</div>
         </div>
-
         <div class="sidebar-card">
           <div class="card-row">
             <h3>Captures</h3>
@@ -225,7 +225,6 @@
           </div>
         </div>
       </div>
-
       <div class="board-center">
         <div class="ck-board-wrap">
           <div id="checkersGrid" class="ck-board"></div>
@@ -234,99 +233,96 @@
     </div>
   </div>
 
-  <!-- ══ SNAKE & LADDERS VIEW ═══════════════════════════════════ -->
-  <div id="view-snake" class="view">
-    <div class="game-topbar snake-bar">
+  <!-- ══ GEMS CRUSH VIEW ════════════════════════════════════════ -->
+  <div id="view-gems" class="view">
+    <div class="game-topbar gems-bar">
       <button class="back-btn" data-target="hub">← Hub</button>
-      <span class="game-topbar-title">🎲 Snake & Ladders</span>
+      <span class="game-topbar-title">💎 Gems Crush</span>
     </div>
-
-    <div class="snake-layout">
-      <div class="snake-sidebar">
-
-        <div class="sidebar-card" id="snakeSetupCard">
-          <h3>Players</h3>
-          <div class="player-count-row">
-            <button class="count-btn active" data-players="2">2</button>
-            <button class="count-btn" data-players="3">3</button>
-            <button class="count-btn" data-players="4">4</button>
-          </div>
-          <div id="snakePlayerNames" class="player-names-grid"></div>
-          <button class="btn-primary full mt12" id="snakeStartBtn">Start Game</button>
+    <div class="gems-layout">
+      <div class="gems-sidebar">
+        <div class="sidebar-card gems-score-card">
+          <h3>Score</h3>
+          <div class="gems-score-num" id="gemsScore">0</div>
+          <div class="gems-best-txt" id="gemsBest">Best: 0</div>
         </div>
-
-        <div class="sidebar-card" id="snakeGameCard" style="display:none">
-          <div id="snakeTurnInfo" class="turn-info">Roll the dice!</div>
-          <button class="dice-btn" id="rollDiceBtn">
-            <span class="dice-face" id="diceFace">🎲</span>
-            <span>Roll Dice</span>
-          </button>
-          <div id="snakePlayerList" class="snake-player-list"></div>
-          <button class="btn-secondary full mt12" id="snakeResetBtn">New Game</button>
-        </div>
-
         <div class="sidebar-card">
-          <h3>Legend</h3>
-          <div class="legend-row"><span class="legend-snake">▬</span> Snake (slide down)</div>
-          <div class="legend-row"><span class="legend-ladder">▮</span> Ladder (climb up)</div>
+          <h3>Level <span id="gemsLevelNum">1</span></h3>
+          <div class="gems-progress-wrap">
+            <div class="gems-progress-bar">
+              <div class="gems-progress-fill" id="gemsProgressFill" style="width:0%"></div>
+            </div>
+            <div class="gems-target-txt" id="gemsTargetTxt">Target: 500</div>
+          </div>
         </div>
-
+        <div class="sidebar-card">
+          <h3>Moves Left</h3>
+          <div class="gems-moves-num" id="gemsMoves">20</div>
+        </div>
+        <div class="sidebar-card gems-hint-card">
+          <h3>How to Play</h3>
+          <p class="gems-hint-txt">Tap a gem, then tap an adjacent gem to swap. Match 3 or more in a row to score!</p>
+        </div>
+        <button class="btn-secondary full" id="gemsNewGameBtn">↺ New Game</button>
       </div>
-
-      <div class="snake-board-wrap">
-        <canvas id="snakeCanvas"></canvas>
+      <div class="gems-board-wrap">
+        <div id="gemsBoard" class="gems-board"></div>
+        <div class="gems-overlay hidden" id="gemsOverlay">
+          <div class="gems-overlay-inner">
+            <div class="gems-over-icon" id="gemsOverIcon">💎</div>
+            <div class="gems-over-title" id="gemsOverTitle">Level Complete!</div>
+            <div class="gems-over-score" id="gemsOverScore"></div>
+            <button class="btn-primary" id="gemsNextBtn" style="display:none">Next Level →</button>
+            <button class="btn-secondary" id="gemsRetryBtn">Try Again</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ══ DOMINOES VIEW ══════════════════════════════════════════ -->
-  <div id="view-domino" class="view">
-    <div class="game-topbar domino-bar">
+  <!-- ══ 2048 VIEW ══════════════════════════════════════════════ -->
+  <div id="view-t2048" class="view">
+    <div class="game-topbar t2048-bar">
       <button class="back-btn" data-target="hub">← Hub</button>
-      <span class="game-topbar-title">🁣 Dominoes</span>
+      <span class="game-topbar-title">🔢 2048</span>
     </div>
-
-    <div class="domino-layout">
-
-      <!-- AI hand (top, face-down) -->
-      <div class="domino-ai-area">
-        <div class="domino-label">AI Hand: <strong id="aiHandCount">0</strong> tiles</div>
-        <div id="aiHand" class="ai-hand-row"></div>
-      </div>
-
-      <!-- Board -->
-      <div class="domino-board-wrap">
-        <div class="domino-board-info">
-          <span>Boneyard: <strong id="boneyardCount">0</strong></span>
-          <span id="dominoStatus" class="domino-status-txt">Start by picking a tile</span>
-          <button class="btn-secondary small-btn" id="dominoDrawBtn">Draw Tile</button>
+    <div class="t2048-layout">
+      <div class="t2048-sidebar">
+        <div class="sidebar-card">
+          <h3>Score</h3>
+          <div class="t2048-score-num" id="t2048Score">0</div>
+          <div class="t2048-best-txt" id="t2048Best">Best: 0</div>
         </div>
-        <div id="dominoBoard" class="domino-board">
-          <p class="domino-empty-msg" id="dominoBoardEmpty">No tiles played yet. Play the first tile from your hand below.</p>
+        <div class="sidebar-card">
+          <h3>How to Play</h3>
+          <p class="t2048-hint">Use arrow keys or swipe to move tiles. Tiles with the same number merge. Reach <strong>2048</strong> to win!</p>
         </div>
+        <button class="btn-secondary full" id="t2048NewBtn">↺ New Game</button>
       </div>
-
-      <!-- Player hand (bottom) -->
-      <div class="domino-player-area">
-        <div class="domino-label">Your Hand <span class="domino-hint">(click a tile to play it)</span></div>
-        <div id="playerHand" class="player-hand-row"></div>
-      </div>
-
-      <!-- New game overlay -->
-      <div class="domino-setup-overlay" id="dominoSetup">
-        <div class="domino-setup-box">
-          <div class="setup-icon">🁣</div>
-          <h3>Dominoes</h3>
-          <p>Match tiles on both ends. First to empty their hand wins!</p>
-          <div class="btn-group">
-            <button class="btn-primary" data-domino-mode="ai" id="dominoVsAiBtn">vs AI</button>
-            <button class="btn-secondary" data-domino-mode="local" id="dominoLocalBtn">Pass &amp; Play</button>
-            <button class="mode-btn" data-domino-mode="create" id="dominoCreateBtn">Create Room</button>
-            <button class="mode-btn" data-domino-mode="join" id="dominoJoinBtn">Join Room</button>
+      <div class="t2048-board-wrap">
+        <div id="t2048Board" class="t2048-board">
+          <div class="t2048-bg-grid">
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+          </div>
+          <div id="t2048Tiles" class="t2048-tiles"></div>
+        </div>
+        <div class="t2048-overlay hidden" id="t2048Overlay">
+          <div class="t2048-overlay-inner">
+            <div class="t2048-over-icon" id="t2048OverIcon">🏆</div>
+            <div class="t2048-over-title" id="t2048OverTitle">You Win!</div>
+            <div class="t2048-over-score" id="t2048OverScore"></div>
+            <button class="btn-primary" id="t2048ContinueBtn" style="display:none">Keep Going</button>
+            <button class="btn-secondary" id="t2048RetryBtn">New Game</button>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
