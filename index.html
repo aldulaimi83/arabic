@@ -238,6 +238,7 @@
     <div class="game-topbar gems-bar">
       <button class="back-btn" data-target="hub">← Hub</button>
       <span class="game-topbar-title">💎 Gems Crush</span>
+      <button class="btn-secondary gems-sound-btn" id="gemsSoundBtn" type="button">🔊 Sound On</button>
     </div>
     <div class="gems-layout">
       <div class="gems-sidebar">
@@ -294,6 +295,14 @@
         <button class="btn-secondary full" id="gemsNewGameBtn">↺ New Game</button>
       </div>
       <div class="gems-board-wrap">
+        <div class="gems-board-shell">
+          <div class="gems-shell-top">
+            <div>
+              <div class="gems-shell-title">Candy Parade</div>
+              <div class="gems-shell-subtitle" id="gemsShellSubtitle">Chain sweet matches, trigger powers, and clear the target.</div>
+            </div>
+            <div class="gems-shell-badge" id="gemsShellBadge">Sweet x1</div>
+          </div>
         <div class="gems-celebration hidden" id="gemsCelebration"></div>
         <div class="gems-status-toast hidden" id="gemsStatusToast">Sweet!</div>
         <div id="gemsBoard" class="gems-board"></div>
@@ -306,6 +315,7 @@
             <button class="btn-primary" id="gemsContinueBtn" style="display:none">Continue +4 Moves</button>
             <button class="btn-secondary" id="gemsRetryBtn">Try Again</button>
           </div>
+        </div>
         </div>
       </div>
     </div>

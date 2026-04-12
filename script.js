@@ -542,12 +542,15 @@ let gemsColBlasts = 0;
 let gemsSpinAnimating = false;
 let gemsPendingPower = null;
 let gemsToastTimer = null;
+let gemsAudioEnabled = localStorage.getItem('gems_audio') !== 'off';
+let gemsAudioContext = null;
 
 function initGemsView() {
   gemsBest = parseInt(localStorage.getItem('gems_best') || '0');
   gemsTrophies = parseInt(localStorage.getItem('gems_trophies') || '0');
   document.getElementById('gemsBest').textContent = `Best: ${gemsBest.toLocaleString()}`;
   document.getElementById('gemsTrophies').textContent = `Trophies: ${gemsTrophies.toLocaleString()}`;
+  updateGemsSoundButton();
   gemsNewGame();
 }
 
@@ -679,6 +682,80 @@ function gemsRender() {
   }
 }
 
+function updateGemsSoundButton() {
+  const btn = document.getElementById('gemsSoundBtn');
+  if (!btn) return;
+  btn.textContent = gemsAudioEnabled ? '🔊 Sound On' : '🔈 Sound Off';
+}
+
+function initGemsAudio() {
+  if (!gemsAudioEnabled) return null;
+  if (!window.AudioContext && !window.webkitAudioContext) return null;
+  if (!gemsAudioContext) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    gemsAudioContext = new Ctx();
+  }
+  if (gemsAudioContext.state === 'suspended') {
+    gemsAudioContext.resume().catch(() => {});
+  }
+  return gemsAudioContext;
+}
+
+function gemsPlaySound(type) {
+  const ctx = initGemsAudio();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const master = ctx.createGain();
+  master.connect(ctx.destination);
+  master.gain.setValueAtTime(0.0001, now);
+  master.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
+  master.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+
+  const voice = (freq, start, dur, wave = 'sine', endFreq = freq) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = wave;
+    osc.frequency.setValueAtTime(freq, now + start);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, now + start + dur);
+    gain.gain.setValueAtTime(0.0001, now + start);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(now + start);
+    osc.stop(now + start + dur + 0.02);
+  };
+
+  if (type === 'select') voice(520, 0, 0.07, 'triangle', 620);
+  else if (type === 'badSwap') voice(240, 0, 0.12, 'sawtooth', 180);
+  else if (type === 'match') {
+    voice(440, 0, 0.09, 'triangle', 520);
+    voice(660, 0.06, 0.12, 'sine', 820);
+  } else if (type === 'cascade') {
+    voice(520, 0, 0.08, 'triangle', 660);
+    voice(660, 0.05, 0.1, 'triangle', 840);
+    voice(880, 0.1, 0.12, 'sine', 1100);
+  } else if (type === 'reshuffle') {
+    voice(280, 0, 0.18, 'sawtooth', 520);
+    voice(520, 0.08, 0.16, 'triangle', 340);
+  } else if (type === 'spin') {
+    for (let i = 0; i < 5; i++) voice(350 + (i * 90), i * 0.05, 0.08, 'triangle', 420 + (i * 90));
+  } else if (type === 'reward') {
+    voice(620, 0, 0.1, 'triangle', 820);
+    voice(820, 0.06, 0.14, 'triangle', 1180);
+  } else if (type === 'power') {
+    voice(190, 0, 0.22, 'square', 120);
+    voice(640, 0.08, 0.16, 'sawtooth', 280);
+  } else if (type === 'win') {
+    voice(520, 0, 0.14, 'triangle', 780);
+    voice(780, 0.1, 0.16, 'triangle', 1040);
+    voice(1040, 0.2, 0.22, 'sine', 1320);
+  } else if (type === 'lose') {
+    voice(320, 0, 0.2, 'sawtooth', 180);
+    voice(220, 0.1, 0.18, 'triangle', 140);
+  }
+}
+
 function gemsOnClick(r, c) {
   if (gemsAnimating || gemsWon || gemsSpinAnimating) return;
   if (gemsMoves <= 0) return;
@@ -694,6 +771,7 @@ function gemsOnClick(r, c) {
 
   if (!gemsSelected) {
     gemsSelected = {r, c};
+    gemsPlaySound('select');
     gemsRender();
     const cell = gemsGetCell(r, c);
     if (cell) cell.classList.add('selected');
@@ -732,6 +810,7 @@ function gemsSwapTiles(r1, c1, r2, c2) {
   if (matches.count === 0) {
     // Swap back — no match
     [gemsGrid[r1][c1], gemsGrid[r2][c2]] = [gemsGrid[r2][c2], gemsGrid[r1][c1]];
+    gemsPlaySound('badSwap');
     gemsRender();
     // Shake effect
     const c1el = gemsGetCell(r1,c1), c2el = gemsGetCell(r2,c2);
@@ -744,6 +823,7 @@ function gemsSwapTiles(r1, c1, r2, c2) {
   gemsCascadeDepth = 0;
   gemsCombo = 1;
   gemsRewardText = 'Match confirmed. Let the cascade roll.';
+  gemsPlaySound('match');
   gemsRender();
   setTimeout(() => gemsClearAndCascade(), 50);
 }
@@ -845,9 +925,11 @@ function gemsClearAndCascade() {
   if (analysis.largestRun >= 5) {
     gemsRewardText = `Mega bonus: ${pts} pts with a ${analysis.largestRun}-gem clear.`;
     gemsShowToast('Delicious!');
+    gemsPlaySound('cascade');
   } else if (gemsCascadeDepth > 1) {
     gemsRewardText = `Cascade x${gemsCascadeDepth} earned ${pts} pts.`;
     gemsShowToast(`Sweet x${gemsCascadeDepth}!`);
+    gemsPlaySound('cascade');
   } else {
     gemsRewardText = `Clean match: +${pts} pts.`;
   }
@@ -934,9 +1016,11 @@ function gemsUpdateUI() {
   document.getElementById('gemsTrophies').textContent = `Trophies: ${gemsTrophies.toLocaleString()}`;
   document.getElementById('gemsTargetTxt').textContent = `Target: ${gemsLevelTarget.toLocaleString()}`;
   document.getElementById('gemsGoalTxt').textContent = `Goal: ${gemsCurrentConfig.goal}`;
+  document.getElementById('gemsShellSubtitle').textContent = gemsRewardText;
   const pct = Math.min(100, (gemsLevelScore / gemsLevelTarget) * 100);
   document.getElementById('gemsProgressFill').style.width = `${pct}%`;
   document.getElementById('gemsComboNum').textContent = `x${gemsCombo}`;
+  document.getElementById('gemsShellBadge').textContent = gemsGiftReady ? 'Wheel Ready' : `Sweet x${gemsCombo}`;
   const giftPct = Math.min(100, (gemsGiftCharge / gemsCurrentConfig.giftGoal) * 100);
   document.getElementById('gemsGiftFill').style.width = `${giftPct}%`;
   document.getElementById('gemsGiftTxt').textContent = gemsGiftReady
@@ -1002,6 +1086,7 @@ function gemsTriggerReshuffle(spendCharge = true, freeAuto = false) {
     ? 'No moves left on the board. Free reshuffle activated.'
     : 'Board reshuffled. Hunt for a bigger combo.';
   gemsShowToast(freeAuto ? 'Lucky shuffle!' : 'Shuffle!');
+  gemsPlaySound('reshuffle');
   gemsRender();
   gemsUpdateUI();
 }
@@ -1046,6 +1131,7 @@ function gemsUseLinePower(type, index) {
   gemsScore += powerPts;
   gemsLevelScore += powerPts;
   gemsRewardText = `${type === 'row' ? 'Row' : 'Column'} wipe activated for +${powerPts} pts.`;
+  gemsPlaySound('power');
   gemsUpdateUI();
 
   setTimeout(() => {
@@ -1067,6 +1153,7 @@ function gemsOpenGift() {
   let spins = 0;
   gemsRewardText = 'Wheel spinning...';
   gemsShowToast('Spin to win!');
+  gemsPlaySound('spin');
   gemsUpdateUI();
   const spinTimer = setInterval(() => {
     spins++;
@@ -1088,6 +1175,7 @@ function gemsApplyWheelReward(reward) {
     gemsMoves += GEMS_BALANCE.wheelMoveReward;
     gemsRewardText = `Wheel reward: +${GEMS_BALANCE.wheelMoveReward} moves.`;
     gemsShowToast('Extra moves!');
+    gemsPlaySound('reward');
     gemsUpdateUI();
     return;
   }
@@ -1097,6 +1185,7 @@ function gemsApplyWheelReward(reward) {
     gemsLevelScore += bonus;
     gemsRewardText = `Wheel reward: +${bonus} pts.`;
     gemsShowToast('Sugar rush!');
+    gemsPlaySound('reward');
     gemsUpdateUI();
     gemsCheckLevelEnd();
     return;
@@ -1105,6 +1194,7 @@ function gemsApplyWheelReward(reward) {
     gemsReshuffles = Math.min(GEMS_BALANCE.maxReshuffles, gemsReshuffles + 1);
     gemsRewardText = 'Wheel reward: +1 reshuffle.';
     gemsShowToast('Reshuffle won!');
+    gemsPlaySound('reward');
     gemsUpdateUI();
     return;
   }
@@ -1112,6 +1202,7 @@ function gemsApplyWheelReward(reward) {
     gemsRowBlasts = Math.min(GEMS_BALANCE.maxRowBlasts, gemsRowBlasts + 1);
     gemsRewardText = 'Wheel reward: +1 row wipe.';
     gemsShowToast('Row blast!');
+    gemsPlaySound('reward');
     gemsUpdateUI();
     return;
   }
@@ -1119,6 +1210,7 @@ function gemsApplyWheelReward(reward) {
     gemsColBlasts = Math.min(GEMS_BALANCE.maxColBlasts, gemsColBlasts + 1);
     gemsRewardText = 'Wheel reward: +1 column wipe.';
     gemsShowToast('Column blast!');
+    gemsPlaySound('reward');
     gemsUpdateUI();
     return;
   }
@@ -1127,6 +1219,7 @@ function gemsApplyWheelReward(reward) {
     localStorage.setItem('gems_trophies', gemsTrophies);
     gemsRewardText = `Wheel reward: +${GEMS_BALANCE.wheelTrophyReward} trophy.`;
     gemsShowToast('Trophy won!');
+    gemsPlaySound('reward');
     gemsUpdateUI();
     return;
   }
@@ -1149,6 +1242,7 @@ function gemsApplyWheelReward(reward) {
   gemsAnimating = true;
   gemsRewardText = `Wheel reward: color blast removed ${blasted.length} gems.`;
   gemsShowToast('Color blast!');
+  gemsPlaySound('reward');
   blasted.forEach(({r,c}) => {
     const cell = gemsGetCell(r,c);
     if (cell) cell.classList.add('matched');
@@ -1177,6 +1271,7 @@ function gemsContinueRun() {
   document.getElementById('gemsOverlay').classList.add('hidden');
   gemsRewardText = `Continue activated. +${GEMS_BALANCE.continueMoves} moves added to save the run.`;
   gemsShowToast('Keep going!');
+  gemsPlaySound('reward');
   gemsUpdateUI();
 }
 
@@ -1207,6 +1302,7 @@ function gemsCheckLevelEnd() {
     gemsWon = true;
     gemsCelebrate('win');
     gemsShowToast('Sugar crush!');
+    gemsPlaySound('win');
     gemsUpdateUI();
 
     nextBtn.onclick = () => {
@@ -1223,6 +1319,7 @@ function gemsCheckLevelEnd() {
     document.getElementById('gemsRetryBtn').textContent = 'Try Again';
     document.getElementById('gemsOverlay').classList.remove('hidden');
     gemsWon = true;
+    gemsPlaySound('lose');
     gemsUpdateUI();
   }
 }
@@ -1234,6 +1331,14 @@ document.getElementById('gemsContinueBtn').addEventListener('click', gemsContinu
 document.getElementById('gemsReshuffleBtn').addEventListener('click', () => gemsTriggerReshuffle(true));
 document.getElementById('gemsRowBlastBtn').addEventListener('click', () => gemsArmPower('row'));
 document.getElementById('gemsColBlastBtn').addEventListener('click', () => gemsArmPower('col'));
+document.getElementById('gemsSoundBtn').addEventListener('click', () => {
+  gemsAudioEnabled = !gemsAudioEnabled;
+  localStorage.setItem('gems_audio', gemsAudioEnabled ? 'on' : 'off');
+  updateGemsSoundButton();
+  if (gemsAudioEnabled) {
+    gemsPlaySound('select');
+  }
+});
 
 // ════════════════════════════════════════════════════════════
 // ██████  2048
