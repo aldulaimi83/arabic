@@ -606,6 +606,16 @@ function gemsStartLevel(level, resetTotalScore = false) {
   gemsRender();
 }
 
+function gemsReplayCurrentLevel(resetTotalScore = true) {
+  gemsGiftCharge = 0;
+  gemsGiftReady = false;
+  gemsPendingPower = null;
+  gemsRewardText = resetTotalScore
+    ? `Level ${gemsLevel} restarted. Score reset.`
+    : `Level ${gemsLevel} restarted.`;
+  gemsStartLevel(gemsLevel, resetTotalScore);
+}
+
 function gemsBuildGrid() {
   gemsGrid = [];
   for (let r=0;r<GEMS_SIZE;r++) {
@@ -708,8 +718,8 @@ function gemsPlaySound(type) {
   const master = ctx.createGain();
   master.connect(ctx.destination);
   master.gain.setValueAtTime(0.0001, now);
-  master.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+  master.gain.exponentialRampToValueAtTime(0.14, now + 0.01);
+  master.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
 
   const voice = (freq, start, dur, wave = 'sine', endFreq = freq) => {
     const osc = ctx.createOscillator();
@@ -718,7 +728,7 @@ function gemsPlaySound(type) {
     osc.frequency.setValueAtTime(freq, now + start);
     osc.frequency.exponentialRampToValueAtTime(endFreq, now + start + dur);
     gain.gain.setValueAtTime(0.0001, now + start);
-    gain.gain.exponentialRampToValueAtTime(0.22, now + start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.35, now + start + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
     osc.connect(gain);
     gain.connect(master);
@@ -757,6 +767,7 @@ function gemsPlaySound(type) {
 }
 
 function gemsOnClick(r, c) {
+  initGemsAudio();
   if (gemsAnimating || gemsWon || gemsSpinAnimating) return;
   if (gemsMoves <= 0) return;
 
@@ -896,8 +907,17 @@ function gemsClearAndCascade() {
     gemsAnimating = false;
     gemsCombo = 1;
     if (!gemsHasPossibleMove()) {
-      gemsRewardText = 'No more smart moves. Free reshuffle!';
-      gemsTriggerReshuffle(false, true);
+      gemsRewardText = gemsReshuffles > 0
+        ? 'No more moves on the board. Use reshuffle to continue.'
+        : 'No more moves and no reshuffles left.';
+      gemsShowToast(gemsReshuffles > 0 ? 'Use reshuffle!' : 'Board stuck!');
+      if (gemsReshuffles <= 0) {
+        gemsMoves = 0;
+        gemsUpdateUI();
+        gemsCheckLevelEnd();
+        return;
+      }
+      gemsUpdateUI();
       return;
     }
     gemsUpdateUI();
@@ -944,7 +964,6 @@ function gemsClearAndCascade() {
   setTimeout(() => {
     gemsApplyGravity();
     gemsFillEmpty();
-    gemsEnsurePlayableBoard();
     gemsRender();
     // Cascade: check for new matches
     setTimeout(() => gemsClearAndCascade(), 300);
@@ -1255,7 +1274,6 @@ function gemsApplyWheelReward(reward) {
   setTimeout(() => {
     gemsApplyGravity();
     gemsFillEmpty();
-    gemsEnsurePlayableBoard();
     gemsRender();
     gemsCascadeDepth = 0;
     setTimeout(() => gemsClearAndCascade(), 280);
@@ -1289,6 +1307,7 @@ function gemsCheckLevelEnd() {
     const scoreEl = document.getElementById('gemsOverScore');
     const nextBtn = document.getElementById('gemsNextBtn');
     const continueBtn = document.getElementById('gemsContinueBtn');
+    const replayBtn = document.getElementById('gemsReplayBtn');
     const retryBtn = document.getElementById('gemsRetryBtn');
 
     gemsAwardTrophy(1 + (gemsLevel % 5 === 0 ? 1 : 0));
@@ -1297,7 +1316,8 @@ function gemsCheckLevelEnd() {
     scoreEl.textContent = `Level Score: ${gemsLevelScore.toLocaleString()} · Total Score: ${gemsScore.toLocaleString()} · Trophy earned`;
     nextBtn.style.display = '';
     continueBtn.style.display = 'none';
-    retryBtn.textContent = 'Play Again';
+    replayBtn.style.display = 'none';
+    retryBtn.textContent = 'Restart Level 1';
     document.getElementById('gemsOverlay').classList.remove('hidden');
     gemsWon = true;
     gemsCelebrate('win');
@@ -1316,7 +1336,8 @@ function gemsCheckLevelEnd() {
     document.getElementById('gemsOverScore').textContent = `Level Score: ${gemsLevelScore.toLocaleString()} / ${gemsLevelTarget.toLocaleString()} · Total: ${gemsScore.toLocaleString()}`;
     document.getElementById('gemsNextBtn').style.display = 'none';
     document.getElementById('gemsContinueBtn').style.display = gemsContinueAvailable ? '' : 'none';
-    document.getElementById('gemsRetryBtn').textContent = 'Try Again';
+    document.getElementById('gemsReplayBtn').style.display = '';
+    document.getElementById('gemsRetryBtn').textContent = 'Restart Level 1';
     document.getElementById('gemsOverlay').classList.remove('hidden');
     gemsWon = true;
     gemsPlaySound('lose');
@@ -1326,6 +1347,7 @@ function gemsCheckLevelEnd() {
 
 document.getElementById('gemsNewGameBtn').addEventListener('click', gemsNewGame);
 document.getElementById('gemsRetryBtn').addEventListener('click', gemsNewGame);
+document.getElementById('gemsReplayBtn').addEventListener('click', () => gemsReplayCurrentLevel(true));
 document.getElementById('gemsGiftBtn').addEventListener('click', gemsOpenGift);
 document.getElementById('gemsContinueBtn').addEventListener('click', gemsContinueRun);
 document.getElementById('gemsReshuffleBtn').addEventListener('click', () => gemsTriggerReshuffle(true));
@@ -1336,6 +1358,7 @@ document.getElementById('gemsSoundBtn').addEventListener('click', () => {
   localStorage.setItem('gems_audio', gemsAudioEnabled ? 'on' : 'off');
   updateGemsSoundButton();
   if (gemsAudioEnabled) {
+    initGemsAudio();
     gemsPlaySound('select');
   }
 });
