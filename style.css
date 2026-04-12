@@ -355,14 +355,68 @@ body {
   border-radius:20px; box-shadow:0 0 40px rgba(244,114,182,.08);
   width:min(520px,calc(100vw - 280px));
   aspect-ratio:1;
+  touch-action:none;
+  user-select:none;
+}
+.gems-status-toast {
+  position:absolute;
+  top:14px;
+  left:50%;
+  transform:translateX(-50%) translateY(-10px);
+  z-index:14;
+  padding:10px 16px;
+  border-radius:999px;
+  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,228,244,.95));
+  color:#9d174d;
+  font-family:'Orbitron',sans-serif;
+  font-size:.85rem;
+  font-weight:900;
+  letter-spacing:.04em;
+  box-shadow:0 14px 32px rgba(0,0,0,.22);
+  opacity:0;
+  pointer-events:none;
+}
+.gems-status-toast.visible { animation:gemsToastIn 1.2s ease forwards; }
+@keyframes gemsToastIn {
+  0% { opacity:0; transform:translateX(-50%) translateY(-16px) scale(.92); }
+  15%,80% { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+  100% { opacity:0; transform:translateX(-50%) translateY(-8px) scale(.98); }
+}
+.gems-celebration {
+  position:absolute; inset:0; z-index:13; pointer-events:none; overflow:hidden;
+}
+.gems-celebration.active::before {
+  content:'Sweet Victory!';
+  position:absolute; left:50%; top:18%;
+  transform:translateX(-50%);
+  padding:12px 22px; border-radius:999px;
+  background:linear-gradient(135deg,#fff1f7,#ffe08a);
+  color:#9d174d; font-family:'Orbitron',sans-serif;
+  font-size:clamp(.9rem,2vw,1.3rem); font-weight:900; letter-spacing:.08em;
+  box-shadow:0 18px 40px rgba(0,0,0,.2);
+  animation:gemsCelebrateBadge .9s ease;
+}
+@keyframes gemsCelebrateBadge {
+  from { opacity:0; transform:translateX(-50%) translateY(18px) scale(.8); }
+  to { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+}
+.gems-confetti {
+  position:absolute; top:-12%; font-size:clamp(1rem,2.2vw,1.6rem);
+  animation:gemsConfettiFall linear forwards;
+}
+@keyframes gemsConfettiFall {
+  0% { transform:translateY(0) rotate(0deg) scale(.8); opacity:0; }
+  12% { opacity:1; }
+  100% { transform:translateY(135%) rotate(320deg) scale(1.15); opacity:0; }
 }
 
 /* Each gem cell */
 .gem-cell {
   border-radius:12px; cursor:pointer; position:relative;
   display:flex; align-items:center; justify-content:center;
-  transition:transform .15s, box-shadow .15s;
+  transition:transform .15s, box-shadow .15s, filter .15s;
   aspect-ratio:1;
+  -webkit-tap-highlight-color:transparent;
 }
 .gem-cell:hover { transform:scale(1.08); }
 .gem-cell.selected {
@@ -371,10 +425,12 @@ body {
   z-index:2;
 }
 .gem-cell.power-target-row {
-  box-shadow:inset 0 0 0 2px rgba(244,114,182,.65);
+  box-shadow:inset 0 0 0 2px rgba(244,114,182,.65), 0 0 18px rgba(244,114,182,.25);
+  filter:saturate(1.1);
 }
 .gem-cell.power-target-col {
-  box-shadow:inset 0 0 0 2px rgba(251,191,36,.7);
+  box-shadow:inset 0 0 0 2px rgba(251,191,36,.7), 0 0 18px rgba(251,191,36,.25);
+  filter:saturate(1.1);
 }
 .gem-cell.matched {
   animation:gemPop .3s ease forwards;
@@ -420,7 +476,7 @@ body {
   display:flex; align-items:center; justify-content:center; z-index:10;
 }
 .gems-overlay-inner {
-  display:grid; gap:16px; text-align:center; padding:32px;
+  display:grid; gap:16px; text-align:center; padding:32px; width:min(100%,360px);
 }
 .gems-over-icon { font-size:3.5rem; }
 .gems-over-title {
@@ -591,7 +647,7 @@ body {
   .board-center,.ck-board-wrap,.gems-board-wrap,.t2048-board-wrap { order:1; }
   #chessBoardWrap { width:min(400px,calc(100vw - 32px)); }
   .ck-board { width:min(400px,calc(100vw - 32px)); }
-  .gems-board { width:min(400px,calc(100vw - 32px)); }
+  .gems-board { width:min(430px,calc(100vw - 20px)); }
   .t2048-board { width:min(360px,calc(100vw - 32px)); }
   .sidebar-card { padding:14px; }
   .game-topbar { padding:10px 14px; }
@@ -602,7 +658,16 @@ body {
   .chess-sidebar,.gems-sidebar,.t2048-sidebar { grid-template-columns:1fr; }
   .game-card { padding:22px 18px; }
   .game-card-icon { font-size:2.2rem; }
-  .gems-board { gap:3px; padding:8px; }
+  .gems-layout { padding:12px; gap:14px; }
+  .gems-sidebar { gap:10px; }
+  .gems-board { gap:3px; padding:8px; width:calc(100vw - 18px); border-radius:18px; }
   .gem-cell { border-radius:8px; }
+  .gems-power-grid button,
+  #gemsGiftBtn,
+  #gemsNewGameBtn,
+  #gemsContinueBtn,
+  #gemsNextBtn,
+  #gemsRetryBtn { min-height:48px; }
+  .gems-over-title { font-size:1.1rem; }
   .t2048-tile { font-size:.75rem; }
 }
