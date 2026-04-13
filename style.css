@@ -97,6 +97,7 @@ body {
 .checkers-card { --cc:var(--checkers); }
 .gems-card     { --cc:var(--gems); }
 .t2048-card    { --cc:var(--t2048); }
+.snake-card    { --cc:var(--snake); }
 
 .chess-card:hover    { border-color:rgba(251,191,36,.5); box-shadow:0 0 40px rgba(251,191,36,.18); transform:translateY(-5px); }
 .checkers-card:hover { border-color:rgba(0,217,255,.5);  box-shadow:0 0 40px rgba(0,217,255,.18);  transform:translateY(-5px); }
@@ -770,4 +771,127 @@ body {
   .gems-shell-badge { width:100%; text-align:center; }
   .gems-over-title { font-size:1.1rem; }
   .t2048-tile { font-size:.75rem; }
+  .snake-layout { grid-template-columns:1fr; }
+  .snake-sidebar { order:2; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .snake-board-wrap { order:1; }
+  .snake-canvas { width:min(400px,calc(100vw - 24px)) !important; height:min(400px,calc(100vw - 24px)) !important; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   SNAKE GAME
+   ═══════════════════════════════════════════════════════ */
+:root { --snake: #22c55e; }
+
+.snake-card { --cc: var(--snake); }
+
+.snake-bar { border-bottom-color: rgba(34,197,94,.35); }
+.snake-bar::after { background: linear-gradient(90deg,transparent,rgba(34,197,94,.15),transparent); }
+
+.snake-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.snake-sidebar { display:flex; flex-direction:column; gap:16px; }
+
+.snake-score-num {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.4rem; font-weight: 900;
+  background: linear-gradient(135deg, #22c55e, #86efac);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.snake-best-txt { color: var(--muted); font-size: .88rem; margin-top: 4px; }
+
+.snake-board-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.snake-canvas {
+  display: block;
+  border-radius: 16px;
+  border: 2px solid rgba(34,197,94,.3);
+  box-shadow: 0 0 40px rgba(34,197,94,.12);
+  background: #06130a;
+  cursor: pointer;
+  width: 500px;
+  height: 500px;
+}
+
+.snake-overlay {
+  position: absolute; inset: 0;
+  background: rgba(4,8,15,.88);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+
+.snake-overlay-inner {
+  text-align: center; padding: 32px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+
+.snake-over-icon { font-size: 3rem; margin-bottom: 8px; }
+.snake-over-title {
+  font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900;
+  background: linear-gradient(135deg,#22c55e,#86efac);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.snake-over-score { color: var(--muted); font-size: 1rem; }
+
+/* ═══════════════════════════════════════════════════════
+   GLOBAL LEADERBOARD MODAL
+   ═══════════════════════════════════════════════════════ */
+.leader-modal-box { max-width: 420px; width: 92vw; }
+
+.leader-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.leader-header h3 { font-family:'Orbitron',sans-serif; font-size:1.2rem;
+  background:linear-gradient(135deg,#fbbf24,#fb923c);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+.leader-tabs {
+  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+}
+
+.leader-tab {
+  padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted);
+  font-weight: 600; font-size: .85rem; cursor: pointer; transition: all .2s;
+}
+.leader-tab.active {
+  background: linear-gradient(135deg,#1a6bff,#00d9ff);
+  border-color: transparent; color: white;
+}
+
+.leader-list {
+  list-style: none; display: flex; flex-direction: column; gap: 8px;
+  max-height: 340px; overflow-y: auto; padding: 0;
+}
+
+.leader-list li {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: .92rem;
+}
+
+.leader-rank {
+  font-family: 'Orbitron', sans-serif; font-size: .85rem; font-weight: 900;
+  color: var(--muted); min-width: 28px; text-align: center;
+}
+.leader-rank.gold   { color: #fbbf24; }
+.leader-rank.silver { color: #94a3b8; }
+.leader-rank.bronze { color: #fb923c; }
+
+.leader-name { flex: 1; font-weight: 600; }
+.leader-score { font-family:'Orbitron',sans-serif; font-size:.9rem; color:#00d9ff; font-weight:700; }
+.leader-loading { color:var(--muted); font-size:.9rem; text-align:center; padding:20px 0; }

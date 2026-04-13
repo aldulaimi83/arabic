@@ -1,0 +1,18 @@
+{
+  "name": "Youooo Games",
+  "short_name": "YGames",
+  "description": "Chess, Checkers, Snake, Gems Crush & 2048 — play free online",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#04080f",
+  "background_color": "#04080f",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "youooo_logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "youooo_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [
+    { "src": "youooo_logo.png", "sizes": "512x512", "type": "image/png", "form_factor": "wide" }
+  ]
+}

@@ -3,8 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Youooo Games — Chess · Checkers · Gems Crush · 2048</title>
-  <meta name="description" content="Free online games — Chess, Checkers, Gems Crush (match-3), and 2048. Play vs AI, local, or online with friends." />
+  <title>Youooo Games — Chess · Checkers · Snake · Gems Crush · 2048</title>
+  <meta name="description" content="Free online games — Chess, Checkers, Snake, Gems Crush, and 2048. Play vs AI, locally, or online with friends. No download needed." />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#04080f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Youooo Games" />
+  <!-- Open Graph (WhatsApp / Facebook / Twitter previews) -->
+  <meta property="og:title" content="Youooo Games — Play Free Online" />
+  <meta property="og:description" content="Chess, Checkers, Snake, Gems Crush & 2048 — all free, no download. Challenge friends online!" />
+  <meta property="og:image" content="https://game.youooo.com/og-preview.png" />
+  <meta property="og:url" content="https://game.youooo.com" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Youooo Games — 5 Free Games Online" />
+  <meta name="twitter:description" content="Chess · Checkers · Snake · Gems Crush · 2048. Play free, no download." />
+  <meta name="twitter:image" content="https://game.youooo.com/og-preview.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&family=Rajdhani:wght@700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
@@ -21,7 +38,7 @@
 
 <!-- ════════════════════ SPLASH ════════════════════ -->
 <div id="splash"><img src="youooo_logo.png" alt="Youooo" /></div>
-<script>(function(){var s=document.getElementById('splash');setTimeout(function(){s.classList.add('fade-out');setTimeout(function(){s.style.display='none'},800)},5000)})()</script>
+<script>(function(){var s=document.getElementById('splash');setTimeout(function(){s.classList.add('fade-out');setTimeout(function(){s.style.display='none'},800)},1500)})()</script>
 
   <!-- Animated background -->
   <div class="bg-layer" aria-hidden="true">
@@ -64,7 +81,7 @@
         <img src="youooo_logo.png" alt="Youooo" style="height:52px;width:auto;flex-shrink:0;" />
         <div>
           <div class="logo-title" style="font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:2px;">Youooo Games</div>
-          <div class="logo-sub">4 games · Play free · Online & Offline</div>
+          <div class="logo-sub">5 games · Play free · Online & Offline</div>
         </div>
       </div>
     </header>
@@ -123,6 +140,24 @@
         <button class="play-btn">Play 2048</button>
       </div>
 
+      <div class="game-card snake-card" data-game="snake">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">🐍</div>
+        <h2 class="game-card-name">Snake</h2>
+        <p class="game-card-desc">Eat, grow, survive — classic arcade!</p>
+        <div class="game-tags">
+          <span class="tag">Arcade</span>
+          <span class="tag">High Score</span>
+          <span class="tag tag-new">New!</span>
+        </div>
+        <button class="play-btn">Play Snake</button>
+      </div>
+
+    </div>
+
+    <!-- Leaderboard button -->
+    <div style="text-align:center;margin:0 0 20px">
+      <button class="btn-secondary" id="openLeaderBtn" style="padding:12px 32px;font-size:1rem;">🏆 Global Leaderboard</button>
     </div>
 
     <div class="hub-footer">
@@ -374,6 +409,73 @@
     </div>
   </div>
 
+  <!-- ══ SNAKE VIEW ════════════════════════════════════════════ -->
+  <div id="view-snake" class="view">
+    <div class="game-topbar snake-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">🐍 Snake</span>
+      <button class="btn-secondary" id="snakeShareBtn" style="display:none">📤 Share</button>
+    </div>
+    <div class="snake-layout">
+      <div class="snake-sidebar">
+        <div class="sidebar-card">
+          <h3>Score</h3>
+          <div class="snake-score-num" id="snakeScore">0</div>
+          <div class="snake-best-txt" id="snakeBest">Best: 0</div>
+          <label class="gems-player-field" style="margin-top:10px">
+            <span>Your Name</span>
+            <input type="text" id="snakePlayerName" maxlength="16" placeholder="Enter name" />
+          </label>
+        </div>
+        <div class="sidebar-card">
+          <h3>Speed</h3>
+          <div class="btn-group">
+            <button class="diff-btn" data-snake-speed="slow">🐢 Slow</button>
+            <button class="diff-btn active" data-snake-speed="normal">⚡ Normal</button>
+            <button class="diff-btn" data-snake-speed="fast">🔥 Fast</button>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <h3>How to Play</h3>
+          <p class="t2048-hint">Arrow keys or WASD to move. Swipe on mobile. Eat 🍎 to grow. Don't hit the walls or yourself! Big scores go on the global leaderboard.</p>
+        </div>
+        <button class="btn-secondary full" id="snakeNewBtn">↺ New Game</button>
+        <button class="btn-secondary full" id="snakeLeaderBtn" style="margin-top:8px">🏆 Leaderboard</button>
+      </div>
+      <div class="snake-board-wrap">
+        <canvas id="snakeCanvas" class="snake-canvas"></canvas>
+        <div class="snake-overlay hidden" id="snakeOverlay">
+          <div class="snake-overlay-inner">
+            <div class="snake-over-icon" id="snakeOverIcon">🐍</div>
+            <div class="snake-over-title" id="snakeOverTitle">Game Over!</div>
+            <div class="snake-over-score" id="snakeOverScore"></div>
+            <button class="btn-primary" id="snakeRetryBtn" style="margin-top:14px">Play Again</button>
+            <button class="btn-secondary" id="snakeShareOverBtn" style="margin-top:8px">📤 Share Score</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GLOBAL LEADERBOARD MODAL ══════════════════════════════ -->
+  <div class="modal-overlay hidden" id="leaderModal">
+    <div class="modal-box leader-modal-box">
+      <button class="modal-close" id="closeLeaderModal">✕</button>
+      <div class="leader-header">
+        <div class="room-icon">🏆</div>
+        <h3>Global Leaderboard</h3>
+      </div>
+      <div class="leader-tabs">
+        <button class="leader-tab active" data-ltab="snake">🐍 Snake</button>
+        <button class="leader-tab" data-ltab="t2048">🔢 2048</button>
+        <button class="leader-tab" data-ltab="gems">💎 Gems</button>
+      </div>
+      <ol class="leader-list" id="leaderList">
+        <li class="leader-loading">Loading…</li>
+      </ol>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -392,5 +494,6 @@
     });
   </script>
   <script src="script.js"></script>
+  <script src="snake-extra.js"></script>
 </body>
 </html>
