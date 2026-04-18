@@ -198,6 +198,7 @@
 
   // Expose init so navigation hook can call it
   window._initSnake = initSnakeView;
+  if (document.querySelector('.view.active')?.id === 'view-snake') initSnakeView();
 })();
 
 // ════════════════════════════════════════════════════════════

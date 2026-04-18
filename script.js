@@ -23,15 +23,40 @@ document.querySelectorAll('.back-btn').forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.target));
 });
 
+const GAME_HASHES = {
+  '#chess': 'chess',
+  '#checkers': 'checkers',
+  '#gems': 'gems',
+  '#gems-crush': 'gems',
+  '#2048': 't2048',
+  '#t2048': 't2048',
+  '#snake': 'snake',
+};
+
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
+  if (name !== 'hub') {
+    const hash = name === 't2048' ? '#2048' : name === 'gems' ? '#gems-crush' : `#${name}`;
+    if (window.location.hash !== hash) history.replaceState(null, '', hash);
+  } else if (window.location.hash) {
+    history.replaceState(null, '', window.location.pathname);
+  }
   window.scrollTo(0, 0);
   if (name === 'chess')    requestAnimationFrame(()=>requestAnimationFrame(initChessView));
   if (name === 'checkers') initCheckersView();
   if (name === 'gems')     initGemsView();
   if (name === 't2048')    initT2048View();
+  if (name === 'snake' && window._initSnake) window._initSnake();
 }
+
+function openGameFromHash() {
+  const target = GAME_HASHES[window.location.hash.toLowerCase()];
+  if (target) showView(target);
+}
+
+window.addEventListener('hashchange', openGameFromHash);
+openGameFromHash();
 
 // ════════════════════════════════════════════════════════════
 // ██████  CHESS

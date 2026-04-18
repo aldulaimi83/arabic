@@ -135,6 +135,110 @@ body {
 .hub-footer a { color:var(--muted); text-decoration:none; transition:color .2s; }
 .hub-footer a:hover { color:var(--text); }
 
+/* ── SEO content and game landing pages ───────────────── */
+.seo-games-panel {
+  width:min(900px, calc(100% - 48px));
+  margin:0 auto 34px;
+  padding:28px;
+  border:1px solid var(--border);
+  border-radius:28px;
+  background:linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
+  box-shadow:0 24px 80px rgba(0,0,0,.22);
+}
+.seo-eyebrow {
+  color:var(--checkers);
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  font-size:.76rem;
+  font-weight:800;
+  margin-bottom:10px;
+}
+.seo-games-panel h1,
+.game-seo-card h1 {
+  font-family:'Orbitron',sans-serif;
+  color:#fff;
+  line-height:1.05;
+  margin-bottom:14px;
+}
+.seo-games-panel h1 { font-size:clamp(1.6rem,4vw,2.4rem); }
+.seo-games-panel p,
+.game-seo-card p,
+.game-seo-card li {
+  color:#9eb0d6;
+  line-height:1.75;
+}
+.seo-game-links,
+.seo-related-links {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:18px;
+}
+.seo-game-links a,
+.seo-related-links a {
+  color:#dff7ff;
+  text-decoration:none;
+  padding:10px 13px;
+  border-radius:999px;
+  border:1px solid rgba(0,217,255,.22);
+  background:rgba(0,217,255,.08);
+  font-size:.86rem;
+  font-weight:800;
+}
+.seo-landing-body {
+  display:grid;
+  min-height:100vh;
+}
+.game-seo-page {
+  min-height:100vh;
+  padding:32px 20px;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(circle at 20% 12%, rgba(0,217,255,.16), transparent 30%),
+    radial-gradient(circle at 80% 20%, rgba(124,58,237,.18), transparent 28%),
+    var(--bg);
+}
+.game-seo-card {
+  width:min(860px,100%);
+  padding:clamp(28px,6vw,54px);
+  border:1px solid var(--border);
+  border-radius:34px;
+  background:rgba(255,255,255,.06);
+  box-shadow:0 30px 100px rgba(0,0,0,.34);
+  backdrop-filter:blur(18px);
+}
+.game-seo-card h1 { font-size:clamp(2rem,6vw,4rem); }
+.game-seo-card ul {
+  display:grid;
+  gap:8px;
+  margin:18px 0 0 20px;
+}
+.seo-logo-link {
+  position:absolute;
+  top:22px;
+  left:22px;
+  display:inline-flex;
+  width:138px;
+  padding:10px 14px;
+  background:#000;
+}
+.seo-logo-link img {
+  width:100%;
+  height:auto;
+}
+.seo-play-button {
+  display:inline-flex;
+  margin-top:24px;
+  padding:14px 22px;
+  border-radius:16px;
+  background:linear-gradient(135deg,#00d9ff,#7c3aed);
+  color:#fff;
+  text-decoration:none;
+  font-weight:900;
+  box-shadow:0 16px 44px rgba(0,217,255,.22);
+}
+
 /* ── Game Topbar ──────────────────────────────────────── */
 .game-topbar {
   position:sticky; top:0; z-index:10;
