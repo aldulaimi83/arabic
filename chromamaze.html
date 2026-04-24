@@ -347,6 +347,30 @@
         </div>
     </div>
 
+    <script>
+        // Ensure DOM is ready before initializing
+        function initChromaMaze() {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initChromaMaze);
+            } else {
+                const canvas = document.getElementById('gameCanvas');
+                if (!canvas) {
+                    console.error('Canvas element not found');
+                    return;
+                }
+                console.log('Canvas found, initializing game...');
+                const game = new ChromaMaze('gameCanvas');
+                game.newGame();
+            }
+        }
+
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initChromaMaze);
+        } else {
+            setTimeout(initChromaMaze, 100);
+        }
+    </script>
     <script src="chromamaze.js"></script>
 </body>
 </html>

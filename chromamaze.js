@@ -311,8 +311,4 @@ class ChromaMaze {
     }
 }
 
-// Initialize game
-window.addEventListener('DOMContentLoaded', () => {
-    const game = new ChromaMaze('gameCanvas');
-    game.newGame();
-});
+// Initialization is now handled in chromamaze.html
