@@ -347,30 +347,34 @@
         </div>
     </div>
 
+    <script src="chromamaze.js"></script>
     <script>
-        // Ensure DOM is ready before initializing
+        // Initialize after chromamaze.js loads
         function initChromaMaze() {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initChromaMaze);
-            } else {
-                const canvas = document.getElementById('gameCanvas');
-                if (!canvas) {
-                    console.error('Canvas element not found');
-                    return;
-                }
-                console.log('Canvas found, initializing game...');
-                const game = new ChromaMaze('gameCanvas');
-                game.newGame();
+            console.log('Initializing ChromaMaze...');
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                console.error('Canvas element not found');
+                return;
             }
+            if (typeof ChromaMaze === 'undefined') {
+                console.error('ChromaMaze class not found');
+                return;
+            }
+            console.log('Canvas found, creating game instance...');
+            const game = new ChromaMaze('gameCanvas');
+            console.log('Game created, starting new game...');
+            game.newGame();
+            console.log('Game initialized successfully!');
         }
 
-        // Start initialization
+        // Start initialization when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initChromaMaze);
         } else {
-            setTimeout(initChromaMaze, 100);
+            // DOM already loaded, initialize immediately
+            initChromaMaze();
         }
     </script>
-    <script src="chromamaze.js"></script>
 </body>
 </html>
