@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChromaMaze Test</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+        canvas { border: 2px solid #0f0; display: block; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>ChromaMaze Test</h1>
+    <p id="status">Loading...</p>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <script>
+        console.log("Test page loaded!");
+        document.getElementById('status').innerHTML = "✅ Page loaded! Canvas ready.";
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Draw test pattern
+        ctx.fillStyle = '#00ff88';
+        ctx.fillRect(50, 50, 300, 300);
+        ctx.fillStyle = '#000';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('ChromaMaze Works!', 200, 200);
+        
+        document.getElementById('status').innerHTML = "✅ Canvas rendered!";
+    </script>
+</body>
+</html>
