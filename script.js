@@ -35,8 +35,20 @@ const GAME_HASHES = {
 };
 
 function showView(name) {
+  // Handle external games first (before DOM manipulation)
+  if (name === 'chromamaze') {
+    window.location.href = 'chromamaze.html';
+    return;
+  }
+
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(`view-${name}`).classList.add('active');
+  const viewEl = document.getElementById(`view-${name}`);
+  if (!viewEl) {
+    console.error(`View not found: view-${name}`);
+    return;
+  }
+  viewEl.classList.add('active');
+
   if (name !== 'hub') {
     const hash = name === 't2048' ? '#2048' : name === 'gems' ? '#gems-crush' : `#${name}`;
     if (window.location.hash !== hash) history.replaceState(null, '', hash);
@@ -49,7 +61,6 @@ function showView(name) {
   if (name === 'gems')     initGemsView();
   if (name === 't2048')    initT2048View();
   if (name === 'snake' && window._initSnake) window._initSnake();
-  if (name === 'chromamaze') window.location.href = 'chromamaze.html';
 }
 
 function openGameFromHash() {
