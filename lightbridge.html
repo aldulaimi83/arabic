@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LightBridge - Puzzle Game | Youooo Games</title>
+    <meta name="description" content="LightBridge: Direct light beams to targets using mirrors and prisms. Beautiful puzzle game with amazing visuals."/>
+    <link rel="icon" href="youooo_logo.png" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(15, 20, 45, 0.9);
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 3em;
+            background: linear-gradient(135deg, #ff6b9d 0%, #c06c84 50%, #6c567b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+        .header p {
+            color: #aaa;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .stat {
+            background: rgba(100, 200, 255, 0.1);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            padding: 15px 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-label { color: #888; font-size: 0.9em; margin-bottom: 5px; }
+        .stat-value { font-size: 2em; font-weight: bold; background: linear-gradient(135deg, #ff6b9d, #c06c84); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .game-area {
+            display: flex;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .board-wrapper {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            justify-content: center;
+        }
+        canvas {
+            border: 3px solid rgba(255, 100, 200, 0.5);
+            border-radius: 15px;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 100%);
+            box-shadow: 0 0 30px rgba(255, 100, 200, 0.3), inset 0 0 20px rgba(255, 100, 200, 0.1);
+            max-width: 100%;
+            display: block;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 200px;
+        }
+        .control-section {
+            background: rgba(100, 200, 255, 0.05);
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .control-label { color: #888; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .difficulty-btns {
+            display: flex;
+            gap: 8px;
+            flex-direction: column;
+        }
+        .diff-btn {
+            padding: 10px;
+            background: rgba(100, 150, 255, 0.1);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            color: #aaa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        .diff-btn:hover { background: rgba(100, 150, 255, 0.2); }
+        .diff-btn.active {
+            background: linear-gradient(135deg, #ff6b9d 0%, #c06c84 100%);
+            color: #fff;
+            border-color: transparent;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b9d 0%, #c06c84 100%);
+            color: #fff;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 100, 200, 0.4); }
+        .btn-secondary {
+            background: rgba(100, 200, 255, 0.2);
+            color: #00bfff;
+            border: 1px solid rgba(100, 200, 255, 0.5);
+        }
+        .btn-secondary:hover { background: rgba(100, 200, 255, 0.3); }
+        .info { color: #888; font-size: 0.85em; line-height: 1.5; }
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            .header h1 { font-size: 2em; }
+            canvas { max-width: 100%; }
+            .game-area { flex-direction: column; }
+            .controls { flex-direction: row; min-width: auto; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💡 LightBridge</h1>
+            <p>Direct light beams to targets using mirrors and prisms</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Level</div>
+                <div class="stat-value" id="levelNum">1</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Moves</div>
+                <div class="stat-value" id="movesNum">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Best</div>
+                <div class="stat-value" id="bestNum">—</div>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <div class="board-wrapper">
+                <canvas id="gameCanvas" width="450" height="450"></canvas>
+            </div>
+            <div class="controls">
+                <div class="control-section">
+                    <div class="control-label">Difficulty</div>
+                    <div class="difficulty-btns">
+                        <button class="diff-btn active" onclick="window.game?.setDifficulty('easy')">Easy</button>
+                        <button class="diff-btn" onclick="window.game?.setDifficulty('normal')">Normal</button>
+                        <button class="diff-btn" onclick="window.game?.setDifficulty('hard')">Hard</button>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-label">How to Play</div>
+                    <div class="info">
+                        🖱️ Click mirrors to rotate them<br><br>
+                        🎯 Direct light beams to targets<br><br>
+                        🔄 Use multiple mirrors strategically<br><br>
+                        ✨ Complete all targets to win!
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn-primary" onclick="window.game?.newGame()">New Game</button>
+                    <button class="btn-secondary" onclick="window.game?.reset()">Reset</button>
+                    <button class="btn-secondary" onclick="window.location.href='index.html'">Back to Hub</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="lightbridge.js"></script>
+    <script>
+        console.log('LightBridge loaded');
+        function startGame() {
+            if (typeof LightBridge === 'undefined') {
+                setTimeout(startGame, 100);
+                return;
+            }
+            window.game = new LightBridge('gameCanvas');
+            window.game.newGame();
+            console.log('✅ LightBridge initialized');
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startGame);
+        } else {
+            startGame();
+        }
+    </script>
+</body>
+</html>
