@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Play Free Online Games - Chess, Checkers, Snake, 2048 & Gems Crush | Youooo Games</title>
+  <meta name="description" content="Play free online games with no signup. Enjoy chess online, checkers online, Snake, 2048, and Gems Crush puzzle games in your browser on desktop or mobile." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://game.youooo.com/" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#04080f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Youooo Games" />
+  <!-- Open Graph (WhatsApp / Facebook / Twitter previews) -->
+  <meta property="og:title" content="Play Free Online Games - Chess, Checkers, Snake, 2048 & Gems Crush" />
+  <meta property="og:description" content="Free browser games with no signup: chess, checkers, Snake, 2048, and Gems Crush. Play on desktop or mobile." />
+  <meta property="og:image" content="https://game.youooo.com/og-preview.png" />
+  <meta property="og:url" content="https://game.youooo.com/" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Play Free Online Games - Chess, Checkers, Snake, 2048 & Gems Crush" />
+  <meta name="twitter:description" content="Play free online games with no signup. Chess, Checkers, Snake, Gems Crush and 2048 in your browser." />
+  <meta name="twitter:image" content="https://game.youooo.com/og-preview.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&family=Rajdhani:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="youooo_logo.png" />
+  <style>
+    #splash{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .8s ease}
+    #splash.fade-out{opacity:0;pointer-events:none}
+    #splash img{width:min(420px,80vw);animation:splashPulse 1.2s ease-in-out infinite alternate}
+    @keyframes splashPulse{from{transform:scale(1);opacity:.9}to{transform:scale(1.04);opacity:1}}
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ SPLASH ════════════════════ -->
+<div id="splash"><img src="youooo_logo.png" alt="Youooo" /></div>
+<script>(function(){var s=document.getElementById('splash');setTimeout(function(){s.classList.add('fade-out');setTimeout(function(){s.style.display='none'},800)},1500)})()</script>
+
+  <!-- Animated background -->
+  <div class="bg-layer" aria-hidden="true">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- ══ ONLINE ROOM MODAL ══════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="roomModal">
+    <div class="modal-box">
+      <button class="modal-close" id="closeRoomModal">✕</button>
+      <div id="createRoomPanel" class="room-panel hidden">
+        <div class="room-icon">🔗</div>
+        <h3>Room Created</h3>
+        <p class="room-label">Share this code with your friend:</p>
+        <div class="room-code-display" id="displayRoomCode">—</div>
+        <div class="room-waiting">
+          <div class="waiting-dot"></div>
+          <span id="waitingText">Waiting for opponent...</span>
+        </div>
+        <button class="btn-secondary" id="copyRoomCodeBtn">Copy Code</button>
+      </div>
+      <div id="joinRoomPanel" class="room-panel hidden">
+        <div class="room-icon">🎮</div>
+        <h3>Join a Game</h3>
+        <p class="room-label">Enter the room code from your friend:</p>
+        <input class="room-input" type="text" id="joinCodeInput" placeholder="e.g. XKRT42" maxlength="6" autocomplete="off" />
+        <button class="btn-primary" id="confirmJoinBtn">Join Room</button>
+        <p class="room-error hidden" id="roomError">Room not found or already full.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HUB VIEW ═══════════════════════════════════════════════ -->
+  <div id="view-hub" class="view active">
+    <header class="hub-header">
+      <div class="hub-logo">
+        <img src="youooo_logo.png" alt="Youooo" style="height:52px;width:auto;flex-shrink:0;" />
+        <div>
+          <div class="logo-title" style="font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:2px;">Youooo Games</div>
+          <div class="logo-sub">6 games · Play free · Online & Offline</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="game-hub-grid">
+
+      <div class="game-card chess-card" data-game="chess">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">♟</div>
+        <h2 class="game-card-name">Chess</h2>
+        <p class="game-card-desc">Strategy, tactics & AI challenge</p>
+        <div class="game-tags">
+          <span class="tag">vs AI</span>
+          <span class="tag">2 Players</span>
+          <span class="tag tag-online">Online</span>
+        </div>
+        <button class="play-btn">Play Chess</button>
+      </div>
+
+      <div class="game-card checkers-card" data-game="checkers">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">⬡</div>
+        <h2 class="game-card-name">Checkers</h2>
+        <p class="game-card-desc">Classic draughts with online rooms</p>
+        <div class="game-tags">
+          <span class="tag">vs AI</span>
+          <span class="tag">2 Players</span>
+          <span class="tag tag-online">Online</span>
+        </div>
+        <button class="play-btn">Play Checkers</button>
+      </div>
+
+      <div class="game-card gems-card" data-game="gems">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">💎</div>
+        <h2 class="game-card-name">Gems Crush</h2>
+        <p class="game-card-desc">Swap & match gems to score big!</p>
+        <div class="game-tags">
+          <span class="tag">Puzzle</span>
+          <span class="tag">Match-3</span>
+          <span class="tag tag-new">New!</span>
+        </div>
+        <button class="play-btn">Play Gems</button>
+      </div>
+
+      <div class="game-card t2048-card" data-game="t2048">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">🔢</div>
+        <h2 class="game-card-name">2048</h2>
+        <p class="game-card-desc">Slide tiles, merge numbers, reach 2048!</p>
+        <div class="game-tags">
+          <span class="tag">Puzzle</span>
+          <span class="tag">High Score</span>
+          <span class="tag tag-new">New!</span>
+        </div>
+        <button class="play-btn">Play 2048</button>
+      </div>
+
+      <div class="game-card snake-card" data-game="snake">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">🐍</div>
+        <h2 class="game-card-name">Snake</h2>
+        <p class="game-card-desc">Eat, grow, survive — classic arcade!</p>
+        <div class="game-tags">
+          <span class="tag">Arcade</span>
+          <span class="tag">High Score</span>
+          <span class="tag tag-new">New!</span>
+        </div>
+        <button class="play-btn">Play Snake</button>
+      </div>
+
+      <div class="game-card chromamaze-card" data-game="chromamaze">
+        <div class="card-glow"></div>
+        <div class="game-card-icon">🎨</div>
+        <h2 class="game-card-name">ChromaMaze</h2>
+        <p class="game-card-desc">Navigate mazes by color sequence</p>
+        <div class="game-tags">
+          <span class="tag">Puzzle</span>
+          <span class="tag">Logic</span>
+          <span class="tag tag-new">Exclusive!</span>
+        </div>
+        <button class="play-btn">Play ChromaMaze</button>
+      </div>
+
+    </div>
+
+    <!-- Leaderboard button -->
+    <div style="text-align:center;margin:0 0 20px">
+      <button class="btn-secondary" id="openLeaderBtn" style="padding:12px 32px;font-size:1rem;">🏆 Global Leaderboard</button>
+    </div>
+
+    <div class="hub-footer">
+      <a href="https://youooo.com" target="_blank" rel="noopener">Username Checker</a>
+      <span>·</span>
+      <a href="https://resume.youooo.com" target="_blank" rel="noopener">Resume Builder</a>
+      <span>·</span>
+      <a href="https://linux.youooo.com" target="_blank" rel="noopener">Learn Linux</a>
+      <span>·</span>
+      <a href="https://dari.youooo.com" target="_blank" rel="noopener">Dari Real Estate</a>
+    </div>
+
+    <section class="seo-games-panel">
+      <p class="seo-eyebrow">Free Browser Games</p>
+      <h1>Play Free Online Games - Chess, Checkers, Snake, 2048 and Gems Crush</h1>
+      <p>
+        Youooo Games is a free online games hub for quick browser play. Play chess online free with AI or friends,
+        play checkers online, enjoy classic Snake, try a free 2048 browser game, or relax with Gems Crush match-3 puzzles.
+        No signup is required, and the games work on desktop and mobile browsers.
+      </p>
+      <div class="seo-game-links" aria-label="Game pages">
+        <a href="chess.html">Play chess online free no login</a>
+        <a href="checkers.html">Play checkers online free</a>
+        <a href="snake.html">Play snake game online classic</a>
+        <a href="2048.html">Play 2048 online free</a>
+        <a href="gems-crush.html">Play Gems Crush match-3 online</a>
+        <a href="chromamaze.html">Play ChromaMaze color puzzle game</a>
+      </div>
+    </section>
+  </div>
+
+  <!-- ══ CHESS VIEW ═════════════════════════════════════════════ -->
+  <div id="view-chess" class="view">
+    <div class="game-topbar chess-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">♟ Chess</span>
+      <span class="online-badge hidden" id="chessOnlineBadge">🟢 Online</span>
+    </div>
+    <div class="chess-layout">
+      <div class="chess-sidebar">
+        <div class="sidebar-card">
+          <h3>Mode</h3>
+          <div class="btn-group">
+            <button class="mode-btn active" data-chess-mode="ai">vs AI</button>
+            <button class="mode-btn" data-chess-mode="local">2 Players</button>
+            <button class="mode-btn" data-chess-mode="create">Create Room</button>
+            <button class="mode-btn" data-chess-mode="join">Join Room</button>
+          </div>
+        </div>
+        <div class="sidebar-card" id="chessDiffCard">
+          <h3>AI Difficulty</h3>
+          <div class="btn-group">
+            <button class="diff-btn active" data-chess-diff="easy">Easy</button>
+            <button class="diff-btn" data-chess-diff="medium">Medium</button>
+            <button class="diff-btn" data-chess-diff="hard">Hard</button>
+            <button class="diff-btn" data-chess-diff="expert">Expert</button>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <h3>Status</h3>
+          <div class="status-display" id="chessStatus">White's turn</div>
+        </div>
+        <div class="sidebar-card">
+          <div class="card-row">
+            <h3>Move History</h3>
+            <button class="icon-btn" id="chessResetBtn" title="Reset">↺</button>
+          </div>
+          <ol class="move-history" id="chessMoveHistory"></ol>
+        </div>
+      </div>
+      <div class="board-center">
+        <div id="chessBoardWrap">
+          <div id="chessboard"></div>
+        </div>
+        <button class="flip-btn" id="chessFlipBtn">⇅ Flip Board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CHECKERS VIEW ══════════════════════════════════════════ -->
+  <div id="view-checkers" class="view">
+    <div class="game-topbar checkers-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">⬡ Checkers</span>
+      <span class="online-badge hidden" id="ckOnlineBadge">🟢 Online</span>
+    </div>
+    <div class="chess-layout">
+      <div class="chess-sidebar">
+        <div class="sidebar-card">
+          <h3>Mode</h3>
+          <div class="btn-group">
+            <button class="mode-btn active" data-ck-mode="ai">vs AI</button>
+            <button class="mode-btn" data-ck-mode="local">2 Players</button>
+            <button class="mode-btn" data-ck-mode="create">Create Room</button>
+            <button class="mode-btn" data-ck-mode="join">Join Room</button>
+          </div>
+        </div>
+        <div class="sidebar-card" id="ckDiffCard">
+          <h3>AI Difficulty</h3>
+          <div class="btn-group">
+            <button class="diff-btn active" data-ck-diff="easy">Easy</button>
+            <button class="diff-btn" data-ck-diff="medium">Medium</button>
+            <button class="diff-btn" data-ck-diff="hard">Hard</button>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <h3>Status</h3>
+          <div class="status-display" id="ckStatus">Red's turn</div>
+        </div>
+        <div class="sidebar-card">
+          <div class="card-row">
+            <h3>Captures</h3>
+            <button class="icon-btn" id="ckResetBtn" title="Reset">↺</button>
+          </div>
+          <div class="captures-display">
+            <span>🔴 Red: <strong id="ckRedCaptures">0</strong></span>
+            <span>⚫ Black: <strong id="ckBlackCaptures">0</strong></span>
+          </div>
+        </div>
+      </div>
+      <div class="board-center">
+        <div class="ck-board-wrap">
+          <div id="checkersGrid" class="ck-board"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GEMS CRUSH VIEW ════════════════════════════════════════ -->
+  <div id="view-gems" class="view">
+    <div class="game-topbar gems-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">💎 Gems Crush</span>
+      <button class="btn-secondary gems-sound-btn" id="gemsSoundBtn" type="button">🔊 Sound On</button>
+    </div>
+    <div class="gems-layout">
+      <div class="gems-sidebar">
+        <div class="sidebar-card gems-score-card">
+          <h3>Score</h3>
+          <div class="gems-score-num" id="gemsScore">0</div>
+          <div class="gems-best-txt" id="gemsBest">Best: 0</div>
+          <div class="gems-best-txt" id="gemsBestOwner">Player: Guest</div>
+          <div class="gems-best-txt" id="gemsTrophies">Trophies: 0</div>
+          <label class="gems-player-field">
+            <span>Player Name</span>
+            <input type="text" id="gemsPlayerName" maxlength="18" placeholder="Enter name" />
+          </label>
+          <button class="btn-secondary full" id="gemsSavePlayerBtn" type="button">Save Player</button>
+        </div>
+        <div class="sidebar-card">
+          <h3>Level <span id="gemsLevelNum">1</span></h3>
+          <div class="gems-progress-wrap">
+            <div class="gems-stage-name" id="gemsStageName">Candy Meadow</div>
+            <div class="gems-progress-bar">
+              <div class="gems-progress-fill" id="gemsProgressFill" style="width:0%"></div>
+            </div>
+            <div class="gems-target-txt" id="gemsTargetTxt">Target: 500</div>
+            <div class="gems-goal-txt" id="gemsGoalTxt">Goal: reach the target before you run out of moves.</div>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <h3>Moves Left</h3>
+          <div class="gems-moves-num" id="gemsMoves">20</div>
+          <div class="gems-best-txt" id="gemsContinueTxt">Continue: ready</div>
+        </div>
+        <div class="sidebar-card">
+          <h3>Bonuses</h3>
+          <div class="gems-combo-row">
+            <span>Combo</span>
+            <strong id="gemsComboNum">x1</strong>
+          </div>
+          <div class="gems-progress-wrap">
+            <div class="gems-progress-bar gems-gift-bar">
+              <div class="gems-progress-fill gems-gift-fill" id="gemsGiftFill" style="width:0%"></div>
+            </div>
+            <div class="gems-target-txt" id="gemsGiftTxt">Gift Meter: 0%</div>
+          </div>
+          <button class="btn-primary full" id="gemsGiftBtn" disabled>🎡 Spin Wheel</button>
+          <div class="gems-reward-text" id="gemsRewardText">Big matches and cascades charge your gift meter.</div>
+        </div>
+        <div class="sidebar-card">
+          <h3>Super Powers</h3>
+          <div class="gems-power-grid">
+            <button class="btn-secondary" id="gemsReshuffleBtn">🔀 Reshuffle <span id="gemsReshuffleCount">1</span></button>
+            <button class="btn-secondary" id="gemsRowBlastBtn">💥 Row <span id="gemsRowBlastCount">0</span></button>
+            <button class="btn-secondary" id="gemsColBlastBtn">⚡ Column <span id="gemsColBlastCount">0</span></button>
+          </div>
+          <div class="gems-reward-text" id="gemsPowerHint">Reshuffle is refreshed every level. Large clears and wheel rewards can charge row and column wipes.</div>
+        </div>
+        <div class="sidebar-card gems-hint-card">
+          <h3>How to Play</h3>
+          <p class="gems-hint-txt">Tap a gem, then tap an adjacent gem to swap. Match 3 or more in a row to score. Large clears build combos, trophies, super powers, and wheel spins that can save a failed run.</p>
+        </div>
+        <button class="btn-secondary full" id="gemsNewGameBtn">↺ New Game</button>
+      </div>
+      <div class="gems-board-wrap">
+        <div class="gems-board-shell">
+          <div class="gems-shell-top">
+            <div>
+              <div class="gems-shell-title">Candy Parade</div>
+              <div class="gems-shell-subtitle" id="gemsShellSubtitle">Chain sweet matches, trigger powers, and clear the target.</div>
+            </div>
+            <div class="gems-shell-badge" id="gemsShellBadge">Sweet x1</div>
+          </div>
+        <div class="gems-celebration hidden" id="gemsCelebration"></div>
+        <div class="gems-status-toast hidden" id="gemsStatusToast">Sweet!</div>
+        <div id="gemsBoard" class="gems-board"></div>
+        <div class="gems-overlay hidden" id="gemsOverlay">
+          <div class="gems-overlay-inner">
+            <div class="gems-over-icon" id="gemsOverIcon">💎</div>
+            <div class="gems-over-title" id="gemsOverTitle">Level Complete!</div>
+            <div class="gems-over-score" id="gemsOverScore"></div>
+            <button class="btn-primary" id="gemsNextBtn" style="display:none">Next Level →</button>
+            <button class="btn-primary" id="gemsContinueBtn" style="display:none">Continue +4 Moves</button>
+            <button class="btn-secondary" id="gemsReplayBtn" style="display:none">Replay Same Level</button>
+            <button class="btn-secondary" id="gemsRetryBtn">Restart Level 1</button>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 2048 VIEW ══════════════════════════════════════════════ -->
+  <div id="view-t2048" class="view">
+    <div class="game-topbar t2048-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">🔢 2048</span>
+    </div>
+    <div class="t2048-layout">
+      <div class="t2048-sidebar">
+        <div class="sidebar-card">
+          <h3>Score</h3>
+          <div class="t2048-score-num" id="t2048Score">0</div>
+          <div class="t2048-best-txt" id="t2048Best">Best: 0</div>
+        </div>
+        <div class="sidebar-card">
+          <h3>How to Play</h3>
+          <p class="t2048-hint">Use arrow keys or swipe to move tiles. Tiles with the same number merge. Reach <strong>2048</strong> to win!</p>
+        </div>
+        <button class="btn-secondary full" id="t2048NewBtn">↺ New Game</button>
+      </div>
+      <div class="t2048-board-wrap">
+        <div id="t2048Board" class="t2048-board">
+          <div class="t2048-bg-grid">
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+            <div class="t2048-bg-cell"></div><div class="t2048-bg-cell"></div>
+          </div>
+          <div id="t2048Tiles" class="t2048-tiles"></div>
+        </div>
+        <div class="t2048-overlay hidden" id="t2048Overlay">
+          <div class="t2048-overlay-inner">
+            <div class="t2048-over-icon" id="t2048OverIcon">🏆</div>
+            <div class="t2048-over-title" id="t2048OverTitle">You Win!</div>
+            <div class="t2048-over-score" id="t2048OverScore"></div>
+            <button class="btn-primary" id="t2048ContinueBtn" style="display:none">Keep Going</button>
+            <button class="btn-secondary" id="t2048RetryBtn">New Game</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SNAKE VIEW ════════════════════════════════════════════ -->
+  <div id="view-snake" class="view">
+    <div class="game-topbar snake-bar">
+      <button class="back-btn" data-target="hub">← Hub</button>
+      <span class="game-topbar-title">🐍 Snake</span>
+      <button class="btn-secondary" id="snakeShareBtn" style="display:none">📤 Share</button>
+    </div>
+    <div class="snake-layout">
+      <div class="snake-sidebar">
+        <div class="sidebar-card">
+          <h3>Score</h3>
+          <div class="snake-score-num" id="snakeScore">0</div>
+          <div class="snake-best-txt" id="snakeBest">Best: 0</div>
+          <label class="gems-player-field" style="margin-top:10px">
+            <span>Your Name</span>
+            <input type="text" id="snakePlayerName" maxlength="16" placeholder="Enter name" />
+          </label>
+        </div>
+        <div class="sidebar-card">
+          <h3>Speed</h3>
+          <div class="btn-group">
+            <button class="diff-btn" data-snake-speed="slow">🐢 Slow</button>
+            <button class="diff-btn active" data-snake-speed="normal">⚡ Normal</button>
+            <button class="diff-btn" data-snake-speed="fast">🔥 Fast</button>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <h3>How to Play</h3>
+          <p class="t2048-hint">Arrow keys or WASD to move. Swipe on mobile. Eat 🍎 to grow. Don't hit the walls or yourself! Big scores go on the global leaderboard.</p>
+        </div>
+        <button class="btn-secondary full" id="snakeNewBtn">↺ New Game</button>
+        <button class="btn-secondary full" id="snakeLeaderBtn" style="margin-top:8px">🏆 Leaderboard</button>
+      </div>
+      <div class="snake-board-wrap">
+        <canvas id="snakeCanvas" class="snake-canvas"></canvas>
+        <div class="snake-overlay hidden" id="snakeOverlay">
+          <div class="snake-overlay-inner">
+            <div class="snake-over-icon" id="snakeOverIcon">🐍</div>
+            <div class="snake-over-title" id="snakeOverTitle">Game Over!</div>
+            <div class="snake-over-score" id="snakeOverScore"></div>
+            <button class="btn-primary" id="snakeRetryBtn" style="margin-top:14px">Play Again</button>
+            <button class="btn-secondary" id="snakeShareOverBtn" style="margin-top:8px">📤 Share Score</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GLOBAL LEADERBOARD MODAL ══════════════════════════════ -->
+  <div class="modal-overlay hidden" id="leaderModal">
+    <div class="modal-box leader-modal-box">
+      <button class="modal-close" id="closeLeaderModal">✕</button>
+      <div class="leader-header">
+        <div class="room-icon">🏆</div>
+        <h3>Global Leaderboard</h3>
+      </div>
+      <div class="leader-tabs">
+        <button class="leader-tab active" data-ltab="snake">🐍 Snake</button>
+        <button class="leader-tab" data-ltab="t2048">🔢 2048</button>
+        <button class="leader-tab" data-ltab="gems">💎 Gems</button>
+      </div>
+      <ol class="leader-list" id="leaderList">
+        <li class="leader-loading">Loading…</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyDUipT-BFyt_h2jMc3UjiHq9G010zP71dg",
+      authDomain: "youooo-chess.firebaseapp.com",
+      databaseURL: "https://youooo-chess-default-rtdb.firebaseio.com/",
+      projectId: "youooo-chess",
+      storageBucket: "youooo-chess.firebasestorage.app",
+      messagingSenderId: "726873828616",
+      appId: "1:726873828616:web:829a600819024bcf2910bd"
+    });
+  </script>
+  <script src="script.js"></script>
+  <script src="snake-extra.js"></script>
+  <script src="gems-upgrade.js"></script>
+</body>
+</html>

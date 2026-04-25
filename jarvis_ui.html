@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JARVIS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: #000510;
+    color: #a0d8ef;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    border-bottom: 1px solid #0a2a4a;
+    background: rgba(0,5,16,0.9);
+    z-index: 10;
+  }
+  #topbar .logo {
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 6px;
+    color: #4fc3f7;
+    text-shadow: 0 0 12px #4fc3f7;
+  }
+  #status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #1a3a5a;
+    box-shadow: 0 0 6px #1a3a5a;
+    transition: all 0.4s;
+    display: inline-block;
+    margin-right: 8px;
+  }
+  #status-dot.awake  { background: #00e5ff; box-shadow: 0 0 14px #00e5ff; }
+  #status-dot.thinking { background: #ff6b35; box-shadow: 0 0 14px #ff6b35; animation: pulse 0.6s infinite alternate; }
+  #status-label { font-size: 12px; color: #4a7a9b; letter-spacing: 2px; }
+
+  #clock { font-size: 13px; color: #2a6a8a; letter-spacing: 1px; }
+
+  /* ── MAIN CONTENT ── */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── 3D SPHERE PANEL ── */
+  #sphere-panel {
+    width: 45%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #0a2a4a;
+  }
+  #sphere-canvas { width: 100%; height: 100%; }
+
+  #sphere-label {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: #1a5a7a;
+    text-align: center;
+  }
+  #sphere-label.awake  { color: #4fc3f7; text-shadow: 0 0 8px #4fc3f7; }
+
+  /* ── CHAT PANEL ── */
+  #chat-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  #chat-log {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 6px;
+  }
+  #chat-log::-webkit-scrollbar { width: 4px; }
+  #chat-log::-webkit-scrollbar-track { background: transparent; }
+  #chat-log::-webkit-scrollbar-thumb { background: #0a3a5a; border-radius: 2px; }
+
+  .msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.6;
+    animation: fadeIn 0.3s ease;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: #0a2a4a;
+    border: 1px solid #0d3d63;
+    color: #a0d8ef;
+  }
+  .msg.jarvis {
+    align-self: flex-start;
+    background: #03111f;
+    border: 1px solid #0a4a6a;
+    color: #4fc3f7;
+    text-shadow: 0 0 6px rgba(79,195,247,0.3);
+  }
+  .msg.system {
+    align-self: center;
+    background: transparent;
+    border: 1px solid #0a3a5a;
+    color: #1a5a7a;
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+  .msg.timer, .msg.reminder {
+    align-self: center;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.4);
+    color: #ff6b35;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  .msg-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    opacity: 0.5;
+    margin-bottom: 4px;
+  }
+
+  #thinking-indicator {
+    display: none;
+    align-self: flex-start;
+    padding: 10px 14px;
+    background: #03111f;
+    border: 1px solid #0a4a6a;
+    border-radius: 4px;
+    color: #4fc3f7;
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+  #thinking-indicator.visible { display: block; animation: thinking 1.2s infinite; }
+
+  /* ── INPUT BAR ── */
+  #input-bar {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0 0;
+    border-top: 1px solid #0a2a4a;
+  }
+  #cmd-input {
+    flex: 1;
+    background: #030d1a;
+    border: 1px solid #0a3a5a;
+    border-radius: 3px;
+    color: #4fc3f7;
+    padding: 10px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    caret-color: #4fc3f7;
+  }
+  #cmd-input:focus { border-color: #4fc3f7; box-shadow: 0 0 8px rgba(79,195,247,0.15); }
+  #cmd-input::placeholder { color: #1a4a6a; }
+
+  #send-btn {
+    background: #0a2a4a;
+    border: 1px solid #0a4a7a;
+    color: #4fc3f7;
+    padding: 10px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+  }
+  #send-btn:hover { background: #0a3a6a; box-shadow: 0 0 10px rgba(79,195,247,0.2); }
+
+  /* ── QUICK COMMANDS ── */
+  #quick-cmds {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 0 0;
+  }
+  .qbtn {
+    background: transparent;
+    border: 1px solid #0a3050;
+    color: #2a6a8a;
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .qbtn:hover { border-color: #4fc3f7; color: #4fc3f7; box-shadow: 0 0 8px rgba(79,195,247,0.1); }
+
+  /* ── SCAN LINES ── */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeIn   { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes pulse    { from { opacity:1; } to { opacity:0.4; } }
+  @keyframes thinking { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">JARVIS</div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span id="status-dot"></span>
+    <span id="status-label">STANDBY</span>
+  </div>
+  <div id="clock">--:-- --</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- 3D SPHERE -->
+  <div id="sphere-panel">
+    <canvas id="sphere-canvas"></canvas>
+    <div id="sphere-label" style="letter-spacing:4px;">SAY  "HEY JARVIS"</div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="chat-panel">
+    <div id="chat-log">
+      <div class="msg system">[ JARVIS SYSTEM ONLINE ]</div>
+    </div>
+    <div id="thinking-indicator">PROCESSING ...</div>
+
+    <!-- Quick commands -->
+    <div id="quick-cmds">
+      <button class="qbtn" onclick="send('what time is it')">TIME</button>
+      <button class="qbtn" onclick="send('what is the weather in Dubai')">WEATHER</button>
+      <button class="qbtn" onclick="send('how is my battery')">BATTERY</button>
+      <button class="qbtn" onclick="send('play music on spotify')">PLAY</button>
+      <button class="qbtn" onclick="send('pause music')">PAUSE</button>
+      <button class="qbtn" onclick="send('next track')">NEXT</button>
+      <button class="qbtn" onclick="send('what is playing')">NOW PLAYING</button>
+      <button class="qbtn" onclick="send('tell me a joke')">JOKE</button>
+      <button class="qbtn" onclick="send('take a screenshot')">SCREENSHOT</button>
+      <button class="qbtn" onclick="send('list my reminders')">REMINDERS</button>
+    </div>
+
+    <!-- Input -->
+    <div id="input-bar">
+      <input id="cmd-input" type="text" placeholder="Type a command or ask anything..."/>
+      <button id="send-btn" onclick="sendInput()">SEND</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── SOCKET.IO ──
+const socket = io();
+let isAwake   = false;
+let isThinking = false;
+
+socket.on('connect',        () => console.log('Connected to Jarvis server'));
+socket.on('wake_state',     d => setAwake(d.awake));
+socket.on('jarvis_thinking',d => setThinking(d.state));
+socket.on('user_message',   d => addMessage(d.text, 'user'));
+socket.on('jarvis_message', d => addMessage(d.text, d.type === 'timer' || d.type === 'reminder' ? d.type : 'jarvis'));
+
+function setAwake(state) {
+  isAwake = state;
+  const dot   = document.getElementById('status-dot');
+  const label = document.getElementById('status-label');
+  const slabel= document.getElementById('sphere-label');
+  if (state) {
+    dot.className   = 'awake';
+    label.textContent = 'LISTENING';
+    slabel.textContent = 'ONLINE';
+    slabel.className = 'awake';
+    spherePulse(true);
+  } else {
+    dot.className   = '';
+    label.textContent = 'STANDBY';
+    slabel.textContent = 'SAY  "HEY JARVIS"';
+    slabel.className = '';
+    spherePulse(false);
+  }
+}
+
+function setThinking(state) {
+  isThinking = state;
+  const dot   = document.getElementById('status-dot');
+  const ind   = document.getElementById('thinking-indicator');
+  if (state) {
+    dot.className  = 'thinking';
+    ind.className  = 'visible';
+    document.getElementById('status-label').textContent = 'THINKING';
+    sphereThinking(true);
+  } else {
+    setAwake(isAwake);
+    ind.className  = '';
+    sphereThinking(false);
+  }
+}
+
+function addMessage(text, type='jarvis') {
+  const log  = document.getElementById('chat-log');
+  const div  = document.createElement('div');
+  div.className = `msg ${type}`;
+  if (type === 'user') {
+    div.innerHTML = `<div class="msg-label">YOU</div>${text}`;
+  } else if (type === 'jarvis') {
+    div.innerHTML = `<div class="msg-label">JARVIS</div>${text}`;
+  } else {
+    div.textContent = text;
+  }
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function send(text) {
+  if (!text.trim()) return;
+  socket.emit('text_command', { command: text });
+}
+
+function sendInput() {
+  const inp = document.getElementById('cmd-input');
+  const val = inp.value.trim();
+  if (val) {
+    send(val);
+    inp.value = '';
+  }
+}
+
+document.getElementById('cmd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendInput();
+});
+
+// ── THREE.JS 3D SPHERE ──
+const canvas   = document.getElementById('sphere-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+camera.position.z = 3;
+
+// Particle sphere
+const PARTICLE_COUNT = 1200;
+const RADIUS         = 1.2;
+const positions      = new Float32Array(PARTICLE_COUNT * 3);
+const particleData   = [];
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const theta = Math.acos(2 * Math.random() - 1);
+  const phi   = Math.random() * Math.PI * 2;
+  const r     = RADIUS + (Math.random() - 0.5) * 0.08;
+  const x     = r * Math.sin(theta) * Math.cos(phi);
+  const y     = r * Math.sin(theta) * Math.sin(phi);
+  const z     = r * Math.cos(theta);
+  positions[i*3]   = x;
+  positions[i*3+1] = y;
+  positions[i*3+2] = z;
+  particleData.push({ ox: x, oy: y, oz: z, phase: Math.random() * Math.PI * 2 });
+}
+
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+const pMat = new THREE.PointsMaterial({
+  color: 0x4fc3f7, size: 0.025, transparent: true, opacity: 0.8
+});
+const particles = new THREE.Points(pGeo, pMat);
+scene.add(particles);
+
+// Lines between nearby particles (subset for performance)
+const lineGeo = new THREE.BufferGeometry();
+const linePositions = [];
+const SUBSET = 300;
+for (let i = 0; i < SUBSET; i++) {
+  for (let j = i+1; j < SUBSET; j++) {
+    const dx = positions[i*3]   - positions[j*3];
+    const dy = positions[i*3+1] - positions[j*3+1];
+    const dz = positions[i*3+2] - positions[j*3+2];
+    const d  = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    if (d < 0.22) {
+      linePositions.push(
+        positions[i*3], positions[i*3+1], positions[i*3+2],
+        positions[j*3], positions[j*3+1], positions[j*3+2]
+      );
+    }
+  }
+}
+lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linePositions), 3));
+const lineMat  = new THREE.LineBasicMaterial({ color: 0x1a5a7a, transparent: true, opacity: 0.35 });
+const lines    = new THREE.LineSegments(lineGeo, lineMat);
+scene.add(lines);
+
+// Glow ring
+const ringGeo  = new THREE.RingGeometry(1.18, 1.22, 80);
+const ringMat  = new THREE.MeshBasicMaterial({ color: 0x0a3a5a, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+const ring     = new THREE.Mesh(ringGeo, ringMat);
+ring.rotation.x = Math.PI / 2;
+scene.add(ring);
+
+// State
+let isPulsing   = false;
+let isThinkingS = false;
+let pulseT      = 0;
+
+function spherePulse(on)    { isPulsing = on; }
+function sphereThinking(on) { isThinkingS = on; }
+
+// Resize
+function resizeSphere() {
+  const p = document.getElementById('sphere-panel');
+  renderer.setSize(p.clientWidth, p.clientHeight);
+  camera.aspect = p.clientWidth / p.clientHeight;
+  camera.updateProjectionMatrix();
+}
+resizeSphere();
+window.addEventListener('resize', resizeSphere);
+
+// Animate
+const clock3 = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock3.getElapsedTime();
+
+  // Rotate
+  particles.rotation.y = t * 0.12;
+  lines.rotation.y     = t * 0.12;
+  ring.rotation.z      = t * 0.05;
+
+  // Pulse particles when awake/thinking
+  const pos = particles.geometry.attributes.position;
+  const base = isPulsing || isThinkingS ? 1.0 : 1.0;
+  const amp  = isThinkingS ? 0.05 : isPulsing ? 0.03 : 0.01;
+  const freq = isThinkingS ? 3.0  : isPulsing ? 1.5  : 0.5;
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const d = particleData[i];
+    const s = base + amp * Math.sin(t * freq + d.phase);
+    pos.array[i*3]   = d.ox * s;
+    pos.array[i*3+1] = d.oy * s;
+    pos.array[i*3+2] = d.oz * s;
+  }
+  pos.needsUpdate = true;
+
+  // Color shift
+  if (isThinkingS) {
+    pMat.color.setHex(0xff6b35);
+    lineMat.color.setHex(0x5a2a10);
+  } else if (isPulsing) {
+    pMat.color.setHex(0x00e5ff);
+    lineMat.color.setHex(0x005a7a);
+  } else {
+    pMat.color.setHex(0x4fc3f7);
+    lineMat.color.setHex(0x1a5a7a);
+  }
+
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>

@@ -99,13 +99,11 @@ body {
 .t2048-card    { --cc:var(--t2048); }
 .snake-card    { --cc:var(--snake); }
 .lightbridge-card { --cc:#ff6b9d; }
-.voidstriker-card { --cc:#00ffff; }
 
 .chess-card:hover    { border-color:rgba(251,191,36,.5); box-shadow:0 0 40px rgba(251,191,36,.18); transform:translateY(-5px); }
 .checkers-card:hover { border-color:rgba(0,217,255,.5);  box-shadow:0 0 40px rgba(0,217,255,.18);  transform:translateY(-5px); }
 .gems-card:hover     { border-color:rgba(244,114,182,.5);box-shadow:0 0 40px rgba(244,114,182,.18);transform:translateY(-5px); }
 .t2048-card:hover    { border-color:rgba(251,146,60,.5); box-shadow:0 0 40px rgba(251,146,60,.18); transform:translateY(-5px); }
-.voidstriker-card:hover { border-color:rgba(0,255,255,.5); box-shadow:0 0 40px rgba(0,255,255,.18); transform:translateY(-5px); }
 
 .game-card-icon { font-size:3rem; line-height:1; }
 .game-card-name {
