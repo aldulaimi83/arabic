@@ -27,18 +27,39 @@ body {
   min-height: 100vh;
 }
 
-/* Arabic Text Styling */
+main {
+  position: relative;
+}
+
+main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at top right, rgba(139, 92, 246, 0.14), transparent 32%),
+    radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.12), transparent 26%);
+  pointer-events: none;
+  z-index: -1;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
 
-/* Smooth transitions for all interactive elements */
 button, a {
   transition: all 0.3s ease;
 }
 
-/* Animation for entrance effects */
+button {
+  cursor: pointer;
+}
+
+.letter-tracing-canvas {
+  background-image: linear-gradient(to bottom, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 100% 56px;
+}
+
 @keyframes slideInUp {
   from {
     opacity: 0;
@@ -54,7 +75,6 @@ button, a {
   animation: slideInUp 0.5s ease;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 12px;
 }
@@ -70,4 +90,10 @@ button, a {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #b8860b;
+}
+
+@media (max-width: 640px) {
+  body {
+    background: linear-gradient(180deg, #fff8ef 0%, #fdebd0 100%);
+  }
 }

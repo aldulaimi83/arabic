@@ -3,52 +3,58 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
+const navLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/modules/1', label: 'Alphabet' },
+  { href: '/modules/2', label: 'Recognition' },
+  { href: '/modules/3', label: 'Words' },
+  { href: '/modules/4', label: 'Reading' },
+  { href: '/modules/5', label: 'Writing' },
+];
+
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-4xl">🌟</span>
-            <span className="font-bold text-2xl hidden sm:inline">Arabic Kids</span>
+    <nav className="sticky top-0 z-50 border-b border-white/60 bg-white/80 text-slate-900 shadow-sm backdrop-blur-xl">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-4 py-3">
+          <Link href="/" className="flex items-center gap-3">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-2xl text-white shadow-lg">
+              ا
+            </span>
+            <div>
+              <span className="block text-lg font-extrabold sm:text-2xl">Arabic Kids</span>
+              <span className="hidden text-xs font-medium text-slate-500 sm:block">
+                Learn letters, words, and writing
+              </span>
+            </div>
           </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex gap-8">
-            <Link href="/" className="hover:text-yellow-200 transition">
-              Home
-            </Link>
-            <Link href="/modules/1" className="hover:text-yellow-200 transition">
-              Alphabet
-            </Link>
-            <Link href="/modules/2" className="hover:text-yellow-200 transition">
-              Recognition
-            </Link>
-            <Link href="/modules/3" className="hover:text-yellow-200 transition">
-              Words
-            </Link>
-            <Link href="/modules/4" className="hover:text-yellow-200 transition">
-              Reading
-            </Link>
-            <Link href="/modules/5" className="hover:text-yellow-200 transition">
-              Writing
+          <div className="hidden items-center gap-2 lg:flex">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-violet-50 hover:text-violet-700"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              href="/modules/1"
+              className="rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 py-3 text-sm font-bold text-white shadow-lg hover:from-violet-700 hover:to-fuchsia-600"
+            >
+              Start lesson
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-white hover:bg-opacity-20 transition"
+            className="rounded-2xl border border-slate-200 p-3 text-slate-700 hover:border-violet-200 hover:bg-violet-50 lg:hidden"
+            aria-label="Toggle navigation"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -59,45 +65,27 @@ export default function Navigation() {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            <Link
-              href="/"
-              className="block px-4 py-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition"
-            >
-              Home
-            </Link>
-            <Link
-              href="/modules/1"
-              className="block px-4 py-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition"
-            >
-              Alphabet
-            </Link>
-            <Link
-              href="/modules/2"
-              className="block px-4 py-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition"
-            >
-              Recognition
-            </Link>
-            <Link
-              href="/modules/3"
-              className="block px-4 py-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition"
-            >
-              Words
-            </Link>
-            <Link
-              href="/modules/4"
-              className="block px-4 py-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition"
-            >
-              Reading
-            </Link>
-            <Link
-              href="/modules/5"
-              className="block px-4 py-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition"
-            >
-              Writing
-            </Link>
+          <div className="space-y-2 pb-5 lg:hidden">
+            <div className="rounded-[1.5rem] border border-violet-100 bg-white p-3 shadow-lg">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className="block rounded-2xl px-4 py-3 text-base font-semibold text-slate-700 hover:bg-violet-50 hover:text-violet-700"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <Link
+                href="/modules/1"
+                onClick={() => setIsOpen(false)}
+                className="mt-2 block rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-3 text-center font-bold text-white"
+              >
+                Start lesson
+              </Link>
+            </div>
           </div>
         )}
       </div>
