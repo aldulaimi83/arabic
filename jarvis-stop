@@ -1,6 +1,0 @@
-#!/bin/zsh
-# /jarvis-stop — Stop the Jarvis server
-
-echo "🛑 Stopping Jarvis..."
-
-pkill -f "jarvis_server.py" 2>/dev/null && echo "✅ Jarvis stopped." || echo "ℹ️  Jarvis was not running."
