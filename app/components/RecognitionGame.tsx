@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Letter } from '@/lib/vocabulary';
 import { speakArabic } from '@/lib/speech';
+import { useUi } from './UiProvider';
 
 interface RecognitionGameProps {
   letters: Letter[];
@@ -22,6 +23,35 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
   const [score, setScore] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const { locale, saveRecognitionScore } = useUi();
+  const copy =
+    locale === 'ar'
+      ? {
+          badge: 'لعبة التمييز',
+          title: 'اختر الحرف العربي المطابق',
+          question: 'السؤال',
+          score: 'النتيجة',
+          find: 'ابحث عن هذا الحرف',
+          hear: 'استمع إلى الحرف',
+          choose: 'اختر إجابة ثم انتقل للسؤال التالي.',
+          correct: 'إجابة صحيحة. أحسنت.',
+          tryRemember: 'تذكر هذا الحرف:',
+          next: 'السؤال التالي',
+          again: 'العب مرة أخرى',
+        }
+      : {
+          badge: 'Recognition Game',
+          title: 'Pick the matching Arabic letter',
+          question: 'Question',
+          score: 'Score',
+          find: 'Find this letter',
+          hear: 'Hear letter',
+          choose: 'Choose one answer, then move to the next question.',
+          correct: 'Correct. Great job.',
+          tryRemember: 'Try to remember:',
+          next: 'Next Question',
+          again: 'Play Again',
+        };
 
   const questionSet = useMemo(() => shuffle(letters).slice(0, 10), [letters]);
   const currentLetter = questionSet[questionIndex];
@@ -54,6 +84,7 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
 
   function handleNext() {
     if (questionIndex >= questionSet.length - 1) {
+      saveRecognitionScore(score);
       setQuestionIndex(0);
       setScore(0);
       setShowResult(false);
@@ -69,25 +100,25 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
     <section className="rounded-[2rem] bg-white/95 p-5 shadow-xl ring-1 ring-purple-100 sm:p-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-purple-500">Recognition Game</p>
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-purple-500">{copy.badge}</p>
           <h2 className="mt-2 text-2xl font-bold text-slate-800 sm:text-3xl">
-            Pick the matching Arabic letter
+            {copy.title}
           </h2>
         </div>
         <div className="grid grid-cols-2 gap-3 rounded-2xl bg-purple-50 p-3 text-center text-sm font-semibold text-slate-700">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-purple-500">Question</div>
+            <div className="text-xs uppercase tracking-[0.2em] text-purple-500">{copy.question}</div>
             <div className="mt-1 text-lg">{questionIndex + 1} / {questionSet.length}</div>
           </div>
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-purple-500">Score</div>
+            <div className="text-xs uppercase tracking-[0.2em] text-purple-500">{copy.score}</div>
             <div className="mt-1 text-lg">{score}</div>
           </div>
         </div>
       </div>
 
       <div className="rounded-[2rem] bg-gradient-to-br from-fuchsia-100 via-amber-50 to-sky-100 p-6 text-center sm:p-8">
-        <p className="text-sm font-semibold text-slate-600">Find this letter</p>
+        <p className="text-sm font-semibold text-slate-600">{copy.find}</p>
         <div className="mt-3 text-7xl font-bold text-purple-700 sm:text-8xl">{currentLetter.ar}</div>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
           <button
@@ -95,7 +126,7 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
             onClick={() => speakArabic(currentLetter.ar)}
             className="rounded-full bg-white px-5 py-3 font-bold text-purple-700 shadow-md transition hover:-translate-y-0.5"
           >
-            🔊 Hear Letter
+            🔊 {copy.hear}
           </button>
           <span className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700">
             {currentLetter.name} • {currentLetter.english}
@@ -130,9 +161,9 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
 
       <div className="mt-6 flex flex-col gap-4 rounded-[1.5rem] bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm font-semibold text-slate-700">
-          {!showResult && 'Choose one answer, then move to the next question.'}
-          {showResult && selectedId === currentLetter.id && 'Correct. Great job.'}
-          {showResult && selectedId !== currentLetter.id && `Try to remember: ${currentLetter.ar} is ${currentLetter.name}.`}
+          {!showResult && copy.choose}
+          {showResult && selectedId === currentLetter.id && copy.correct}
+          {showResult && selectedId !== currentLetter.id && `${copy.tryRemember} ${currentLetter.ar} ${locale === 'ar' ? 'هو' : 'is'} ${currentLetter.name}.`}
         </div>
         <button
           type="button"
@@ -140,7 +171,7 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
           disabled={!showResult}
           className="rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 font-bold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isFinished ? 'Play Again' : 'Next Question'}
+          {isFinished ? copy.again : copy.next}
         </button>
       </div>
     </section>

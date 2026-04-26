@@ -27,6 +27,14 @@ body {
   min-height: 100vh;
 }
 
+html[dir="rtl"] body {
+  text-align: right;
+}
+
+html[dir="ltr"] body {
+  text-align: left;
+}
+
 main {
   position: relative;
 }

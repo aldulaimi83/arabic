@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useUi } from './UiProvider';
 
 const levels = [
   {
@@ -39,24 +42,50 @@ const levels = [
 ];
 
 export default function FeatureShowcase() {
+  const { locale } = useUi();
+  const intro =
+    locale === 'ar'
+      ? {
+          badge: 'مسار التعلم',
+          title: 'خمسة مستويات مترابطة بدل ألعاب عشوائية',
+          body: 'الموقع الآن يملك مسارًا واضحًا: الحروف، التمييز، المفردات، القراءة القصيرة، والكتابة الموجهة.',
+          open: 'افتح الدرس',
+          levels: [
+            { id: '01', title: 'الحروف', description: 'تعلم كل حرف عربي واسمه وكيف يتغير شكله داخل الكلمة.' },
+            { id: '02', title: 'التمييز', description: 'تدرّب على التعرف السريع على الحروف بلعبة مناسبة للأطفال.' },
+            { id: '03', title: 'الكلمات', description: 'ابنِ مفردات مبكرة حول الأسرة والبيت والأرقام والألوان.' },
+            { id: '04', title: 'القراءة', description: 'اقرأ عبارات قصيرة واضحة المعنى واستمع إلى النطق.' },
+            { id: '05', title: 'الكتابة', description: 'تتبّع الحروف حرفًا حرفًا على الهاتف أو الكمبيوتر.' },
+          ],
+        }
+      : {
+          badge: 'Learning path',
+          title: 'Five connected levels instead of random mini-games',
+          body: 'The site now has a clear lesson ladder: letter learning, recognition, vocabulary, short reading, and guided writing practice.',
+          open: 'Open lesson',
+          levels: [
+            { id: '01', title: 'Alphabet', description: 'Learn each Arabic letter, its name, and how the shape changes across a word.' },
+            { id: '02', title: 'Recognition', description: 'Practice fast visual recognition with a kid-friendly multiple-choice game.' },
+            { id: '03', title: 'Words', description: 'Build early vocabulary around family, home, numbers, and colors.' },
+            { id: '04', title: 'Reading', description: 'Read short phrases with clear meaning and listen to pronunciation.' },
+            { id: '05', title: 'Writing', description: 'Trace letters one by one on mobile or desktop and repeat the sound.' },
+          ],
+        };
   return (
     <section id="levels" className="py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-violet-600">
-            Learning path
-          </p>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-violet-600">{intro.badge}</p>
           <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-5xl">
-            Five connected levels instead of random mini-games
+            {intro.title}
           </h2>
           <p className="mt-4 text-base leading-8 text-slate-600 sm:text-lg">
-            The site now has a clear lesson ladder: letter learning, recognition,
-            vocabulary, short reading, and guided writing practice.
+            {intro.body}
           </p>
         </div>
 
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-          {levels.map((level) => (
+          {levels.map((level, index) => (
             <Link
               key={level.id}
               href={level.href}
@@ -67,10 +96,10 @@ export default function FeatureShowcase() {
               >
                 Level {level.id}
               </div>
-              <h3 className="mt-5 text-2xl font-bold text-slate-900">{level.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">{level.description}</p>
+              <h3 className="mt-5 text-2xl font-bold text-slate-900">{intro.levels[index].title}</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">{intro.levels[index].description}</p>
               <div className="mt-6 text-sm font-bold text-violet-700 transition group-hover:translate-x-1">
-                Open lesson
+                {intro.open}
               </div>
             </Link>
           ))}

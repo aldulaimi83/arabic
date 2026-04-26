@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Cairo } from 'next/font/google';
 import './globals.css';
 import Navigation from './components/Navigation';
+import { UiProvider } from './components/UiProvider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -33,16 +34,18 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="ar"
-      dir="rtl"
+      lang="en"
+      dir="ltr"
       className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
-        <Navigation />
-        <main className="flex-1">{children}</main>
-        <footer className="mt-12 border-t border-white/60 bg-white/80 py-6 text-center text-sm font-medium text-slate-600 backdrop-blur-xl">
-          <p>Arabic Kids • structured Arabic lessons for reading, recognition, and writing</p>
-        </footer>
+        <UiProvider>
+          <Navigation />
+          <main className="flex-1">{children}</main>
+          <footer className="mt-12 border-t border-white/60 bg-white/80 py-6 text-center text-sm font-medium text-slate-600 backdrop-blur-xl">
+            <p>Arabic Kids • structured Arabic lessons for reading, recognition, and writing</p>
+          </footer>
+        </UiProvider>
       </body>
     </html>
   );

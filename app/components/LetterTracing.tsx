@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Letter } from '@/lib/vocabulary';
 import { speakArabic } from '@/lib/speech';
+import { useUi } from './UiProvider';
 
 interface LetterTracingProps {
   letters: Letter[];
@@ -19,6 +20,14 @@ const LETTER_TIPS: Record<string, string[]> = {
   jim: ['Make the round curve.', 'Finish with the tail and one dot.'],
   ha: ['Make the open rounded shape.', 'Keep the tail smooth.'],
   kha: ['Make the ha shape first.', 'Add one dot on top.'],
+};
+
+const STROKE_GUIDES: Record<string, string[]> = {
+  alif: ['1. Start at the top center.', '2. Pull one straight line down.'],
+  ba: ['1. Draw the belly from right to left.', '2. Add one dot below.'],
+  ta: ['1. Draw the belly from right to left.', '2. Add two dots above.'],
+  tha: ['1. Draw the belly from right to left.', '2. Add three dots above.'],
+  jim: ['1. Make the round bowl shape.', '2. Finish the tail.', '3. Add one dot below.'],
 };
 
 function getCanvasPoint(
@@ -39,6 +48,34 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const currentStrokeRef = useRef<Stroke>([]);
+  const { locale, saveTracingLetter } = useUi();
+  const ui = locale === 'ar'
+    ? {
+        lab: 'مختبر الكتابة',
+        sound: 'استمع إلى الصوت',
+        traceGuide: 'تتبّع الحرف بإصبعك أو بالفأرة',
+        strokes: 'عدد الخطوط',
+        clear: 'امسح اللوحة',
+        previous: 'الحرف السابق',
+        next: 'الحرف التالي',
+        teaching: 'ترتيب الكتابة',
+        goal: 'هدف التدريب',
+        goalBody: 'اطلب من الطفل تتبّع الحرف ثلاث مرات مع نطق الصوت ثم الانتقال للحرف التالي.',
+        done: 'حفظ هذا الحرف كتدريب مكتمل',
+      }
+    : {
+        lab: 'Writing Lab',
+        sound: 'Hear the sound',
+        traceGuide: 'Trace the guide letter with your finger or mouse',
+        strokes: 'Strokes',
+        clear: 'Clear board',
+        previous: 'Previous letter',
+        next: 'Next letter',
+        teaching: 'Stroke order',
+        goal: 'Practice goal',
+        goalBody: 'Ask the child to trace the same letter three times, say the sound out loud, then move to the next letter.',
+        done: 'Save this letter as practiced',
+      };
 
   const currentLetter = letters[currentIndex];
   const practiceTips = useMemo(
@@ -48,6 +85,15 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
         'Say the sound while your finger or pencil moves.',
       ],
     [currentLetter.id],
+  );
+  const strokeGuide = useMemo(
+    () =>
+      STROKE_GUIDES[currentLetter.id] ?? [
+        locale === 'ar' ? '1. ابدأ من جهة بداية الحرف.' : '1. Start from the first entry point of the letter.',
+        locale === 'ar' ? '2. أكمل شكل الحرف ببطء.' : '2. Complete the main shape slowly.',
+        locale === 'ar' ? '3. أضف النقاط في النهاية إذا وجدت.' : '3. Add dots at the end if needed.',
+      ],
+    [currentLetter.id, locale],
   );
 
   const redrawCanvas = (allStrokes: Stroke[]) => {
@@ -139,7 +185,7 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
           <div className="flex flex-col gap-4 rounded-[1.75rem] bg-gradient-to-r from-violet-600 to-fuchsia-500 p-5 text-white sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/75">
-                Writing Lab
+                {ui.lab}
               </p>
               <h2 className="text-3xl font-bold sm:text-4xl">{currentLetter.ar}</h2>
               <p className="text-base text-white/90">
@@ -150,17 +196,17 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
               onClick={() => speakArabic(currentLetter.ar)}
               className="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-violet-700 shadow-lg hover:bg-violet-50"
             >
-              Hear the sound
+              {ui.sound}
             </button>
           </div>
 
           <div className="rounded-[1.5rem] border border-violet-100 bg-violet-50/70 p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-violet-700">
-                Trace the guide letter with your finger or mouse
+                {ui.traceGuide}
               </p>
               <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
-                Strokes: {strokeCount}
+                {ui.strokes}: {strokeCount}
               </span>
             </div>
             <canvas
@@ -181,14 +227,14 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
               onClick={clearTracing}
               className="rounded-2xl border border-slate-200 bg-white px-5 py-3 font-semibold text-slate-700 hover:border-violet-300 hover:text-violet-700"
             >
-              Clear board
+              {ui.clear}
             </button>
             <button
               onClick={() => setCurrentIndex((index) => Math.max(index - 1, 0))}
               disabled={currentIndex === 0}
               className="rounded-2xl border border-slate-200 bg-slate-100 px-5 py-3 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Previous letter
+              {ui.previous}
             </button>
             <button
               onClick={() =>
@@ -197,7 +243,13 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
               disabled={currentIndex === letters.length - 1}
               className="rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 py-3 font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Next letter
+              {ui.next}
+            </button>
+            <button
+              onClick={() => saveTracingLetter(currentLetter.id)}
+              className="rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-white shadow-lg hover:bg-emerald-600"
+            >
+              {ui.done}
             </button>
           </div>
         </div>
@@ -205,24 +257,26 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
         <aside className="space-y-4">
           <div className="rounded-[1.5rem] bg-slate-950 p-5 text-white shadow-xl">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-violet-300">
-              How to teach it
+              {ui.teaching}
             </p>
             <ul className="mt-4 space-y-3 text-sm text-slate-200">
-              {practiceTips.map((tip) => (
+              {strokeGuide.map((tip) => (
                 <li key={tip} className="rounded-2xl bg-white/10 px-4 py-3">
                   {tip}
                 </li>
               ))}
             </ul>
+            <div className="mt-4 rounded-2xl bg-white/5 p-4 text-sm text-slate-300">
+              {practiceTips[0]}
+            </div>
           </div>
 
           <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Practice goal
+              {ui.goal}
             </p>
             <p className="mt-3 text-sm leading-7 text-slate-700">
-              Ask the child to trace the same letter three times, say the sound out loud,
-              then point to the letter on the alphabet level before moving on.
+              {ui.goalBody}
             </p>
           </div>
 
