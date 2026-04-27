@@ -52,6 +52,10 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
           next: 'Next Question',
           again: 'Play Again',
         };
+  const nameCopy =
+    locale === 'ar'
+      ? { name: 'الاسم', englishSound: 'الصوت الإنجليزي', is: 'هو' }
+      : { name: 'Name', englishSound: 'English sound', is: 'is' };
 
   const questionSet = useMemo(() => shuffle(letters).slice(0, 10), [letters]);
   const currentLetter = questionSet[questionIndex];
@@ -129,7 +133,7 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
             🔊 {copy.hear}
           </button>
           <span className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700">
-            {currentLetter.name} • {currentLetter.english}
+            {nameCopy.name}: {currentLetter.name} • {nameCopy.englishSound}: {currentLetter.english}
           </span>
         </div>
       </div>
@@ -163,7 +167,7 @@ export default function RecognitionGame({ letters }: RecognitionGameProps) {
         <div className="text-sm font-semibold text-slate-700">
           {!showResult && copy.choose}
           {showResult && selectedId === currentLetter.id && copy.correct}
-          {showResult && selectedId !== currentLetter.id && `${copy.tryRemember} ${currentLetter.ar} ${locale === 'ar' ? 'هو' : 'is'} ${currentLetter.name}.`}
+          {showResult && selectedId !== currentLetter.id && `${copy.tryRemember} ${currentLetter.ar} ${nameCopy.is} ${currentLetter.name}.`}
         </div>
         <button
           type="button"

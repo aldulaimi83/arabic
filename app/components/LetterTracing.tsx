@@ -62,6 +62,7 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
         goal: 'هدف التدريب',
         goalBody: 'اطلب من الطفل تتبّع الحرف ثلاث مرات مع نطق الصوت ثم الانتقال للحرف التالي.',
         done: 'حفظ هذا الحرف كتدريب مكتمل',
+        englishSound: 'الصوت الإنجليزي',
       }
     : {
         lab: 'Writing Lab',
@@ -75,16 +76,17 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
         goal: 'Practice goal',
         goalBody: 'Ask the child to trace the same letter three times, say the sound out loud, then move to the next letter.',
         done: 'Save this letter as practiced',
+        englishSound: 'English sound',
       };
 
   const currentLetter = letters[currentIndex];
   const practiceTips = useMemo(
     () =>
       LETTER_TIPS[currentLetter.id] ?? [
-        'Trace the large guide letter slowly.',
-        'Say the sound while your finger or pencil moves.',
+        locale === 'ar' ? 'تتبّع الحرف الكبير ببطء.' : 'Trace the large guide letter slowly.',
+        locale === 'ar' ? 'قل صوت الحرف أثناء الكتابة.' : 'Say the sound while your finger or pencil moves.',
       ],
-    [currentLetter.id],
+    [currentLetter.id, locale],
   );
   const strokeGuide = useMemo(
     () =>
@@ -189,7 +191,7 @@ export default function LetterTracing({ letters }: LetterTracingProps) {
               </p>
               <h2 className="text-3xl font-bold sm:text-4xl">{currentLetter.ar}</h2>
               <p className="text-base text-white/90">
-                {currentLetter.name} · Sound: {currentLetter.english}
+                {currentLetter.name} · {ui.englishSound}: {currentLetter.english}
               </p>
             </div>
             <button

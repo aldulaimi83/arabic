@@ -51,11 +51,11 @@ export default function FeatureShowcase() {
           body: 'الموقع الآن يملك مسارًا واضحًا: الحروف، التمييز، المفردات، القراءة القصيرة، والكتابة الموجهة.',
           open: 'افتح الدرس',
           levels: [
-            { id: '01', title: 'الحروف', description: 'تعلم كل حرف عربي واسمه وكيف يتغير شكله داخل الكلمة.' },
-            { id: '02', title: 'التمييز', description: 'تدرّب على التعرف السريع على الحروف بلعبة مناسبة للأطفال.' },
-            { id: '03', title: 'الكلمات', description: 'ابنِ مفردات مبكرة حول الأسرة والبيت والأرقام والألوان.' },
-            { id: '04', title: 'القراءة', description: 'اقرأ عبارات قصيرة واضحة المعنى واستمع إلى النطق.' },
-            { id: '05', title: 'الكتابة', description: 'تتبّع الحروف حرفًا حرفًا على الهاتف أو الكمبيوتر.' },
+            { id: '01', label: 'المستوى', title: 'الحروف', description: 'تعلم كل حرف عربي واسمه وكيف يتغير شكله داخل الكلمة.' },
+            { id: '02', label: 'المستوى', title: 'التمييز', description: 'تدرّب على التعرف السريع على الحروف بلعبة مناسبة للأطفال.' },
+            { id: '03', label: 'المستوى', title: 'الكلمات', description: 'ابنِ مفردات مبكرة حول الأسرة والبيت والأرقام والألوان.' },
+            { id: '04', label: 'المستوى', title: 'القراءة', description: 'اقرأ عبارات قصيرة واضحة المعنى واستمع إلى النطق.' },
+            { id: '05', label: 'المستوى', title: 'الكتابة', description: 'تتبّع الحروف حرفًا حرفًا على الهاتف أو الكمبيوتر.' },
           ],
         }
       : {
@@ -64,11 +64,11 @@ export default function FeatureShowcase() {
           body: 'The site now has a clear lesson ladder: letter learning, recognition, vocabulary, short reading, and guided writing practice.',
           open: 'Open lesson',
           levels: [
-            { id: '01', title: 'Alphabet', description: 'Learn each Arabic letter, its name, and how the shape changes across a word.' },
-            { id: '02', title: 'Recognition', description: 'Practice fast visual recognition with a kid-friendly multiple-choice game.' },
-            { id: '03', title: 'Words', description: 'Build early vocabulary around family, home, numbers, and colors.' },
-            { id: '04', title: 'Reading', description: 'Read short phrases with clear meaning and listen to pronunciation.' },
-            { id: '05', title: 'Writing', description: 'Trace letters one by one on mobile or desktop and repeat the sound.' },
+            { id: '01', label: 'Level', title: 'Alphabet', description: 'Learn each Arabic letter, its name, and how the shape changes across a word.' },
+            { id: '02', label: 'Level', title: 'Recognition', description: 'Practice fast visual recognition with a kid-friendly multiple-choice game.' },
+            { id: '03', label: 'Level', title: 'Words', description: 'Build early vocabulary around family, home, numbers, and colors.' },
+            { id: '04', label: 'Level', title: 'Reading', description: 'Read short phrases with clear meaning and listen to pronunciation.' },
+            { id: '05', label: 'Level', title: 'Writing', description: 'Trace letters one by one on mobile or desktop and repeat the sound.' },
           ],
         };
   return (
@@ -91,10 +91,8 @@ export default function FeatureShowcase() {
               href={level.href}
               className="group rounded-[1.75rem] border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(95,48,255,0.18)]"
             >
-              <div
-                className={`inline-flex rounded-full bg-gradient-to-r ${level.accent} px-4 py-2 text-sm font-bold text-white`}
-              >
-                Level {level.id}
+              <div className={`inline-flex rounded-full bg-gradient-to-r ${level.accent} px-4 py-2 text-sm font-bold text-white`}>
+                {intro.levels[index].label} {level.id}
               </div>
               <h3 className="mt-5 text-2xl font-bold text-slate-900">{intro.levels[index].title}</h3>
               <p className="mt-3 text-sm leading-7 text-slate-600">{intro.levels[index].description}</p>

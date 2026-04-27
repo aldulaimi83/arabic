@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import FeatureShowcase from './components/FeatureShowcase';
 import { useUi } from './components/UiProvider';
 
 export default function Home() {
   const { locale, childName, setChildName, progress } = useUi();
+  const [draftName, setDraftName] = useState(childName);
   const copy =
     locale === 'ar'
       ? {
@@ -36,10 +38,12 @@ export default function Home() {
           profile: 'ملف الطفل',
           profileHint: 'اكتب اسم الطفل لحفظ التقدم على هذا الجهاز.',
           profileSave: 'سيتم الحفظ تلقائيًا',
+          saveName: 'حفظ الاسم',
           letters: 'آخر حرف',
           score: 'أفضل نتيجة',
           tracing: 'مرات الكتابة',
           levels: 'المستويات المفتوحة',
+          guest: 'ضيف',
         }
       : {
           badge: 'Built for kids abroad learning Arabic at home',
@@ -69,11 +73,21 @@ export default function Home() {
           profile: 'Child profile',
           profileHint: 'Type the child name to save progress on this device.',
           profileSave: 'Progress saves automatically',
+          saveName: 'Save name',
           letters: 'Last letter',
           score: 'Best score',
           tracing: 'Tracing sessions',
           levels: 'Opened levels',
+          guest: 'Guest',
         };
+
+  useEffect(() => {
+    setDraftName(childName);
+  }, [childName]);
+
+  const handleSaveName = () => {
+    setChildName(draftName);
+  };
   return (
     <div className="min-h-screen">
       <section className="px-4 pb-14 pt-10 sm:px-6 sm:pb-20 lg:px-8">
@@ -115,12 +129,25 @@ export default function Home() {
             </p>
             <div className="mt-5 rounded-[1.5rem] bg-white/10 p-4">
               <label className="block text-sm font-semibold text-violet-200">{copy.profile}</label>
-              <input
-                value={childName}
-                onChange={(event) => setChildName(event.target.value)}
-                className="mt-3 w-full rounded-2xl border border-white/10 bg-white/95 px-4 py-3 text-base font-semibold text-slate-900 outline-none ring-0 placeholder:text-slate-400"
-                placeholder={locale === 'ar' ? 'اسم الطفل' : 'Child name'}
-              />
+              <div className="mt-3 flex gap-2">
+                <input
+                  value={draftName}
+                  onChange={(event) => setDraftName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      handleSaveName();
+                    }
+                  }}
+                  className="w-full rounded-2xl border border-white/10 bg-white/95 px-4 py-3 text-base font-semibold text-slate-900 outline-none ring-0 placeholder:text-slate-400"
+                  placeholder={locale === 'ar' ? 'اسم الطفل' : 'Child name'}
+                />
+                <button
+                  onClick={handleSaveName}
+                  className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-bold text-white hover:bg-violet-500"
+                >
+                  {copy.saveName}
+                </button>
+              </div>
               <p className="mt-2 text-xs text-slate-300">{copy.profileHint}</p>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm font-semibold">
                 <div className="rounded-2xl bg-white/10 px-3 py-3">{copy.letters}: {progress.alphabetIndex + 1}</div>
@@ -128,7 +155,9 @@ export default function Home() {
                 <div className="rounded-2xl bg-white/10 px-3 py-3">{copy.tracing}: {progress.tracingSessions}</div>
                 <div className="rounded-2xl bg-white/10 px-3 py-3">{copy.levels}: {progress.visitedLevels.length}</div>
               </div>
-              <p className="mt-3 text-xs text-slate-400">{copy.profileSave}</p>
+              <p className="mt-3 text-xs text-slate-400">
+                {copy.profileSave} · {childName || copy.guest}
+              </p>
             </div>
             <div className="mt-6 space-y-4">
               <div className="rounded-[1.5rem] bg-white/10 p-4">
