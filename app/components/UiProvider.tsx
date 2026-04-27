@@ -110,6 +110,17 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
     [childName],
   );
 
+  const updateProgress = useCallback(
+    (updater: (previous: ProgressState) => ProgressState) => {
+      setProgress((previous) => {
+        const next = updater(previous);
+        window.localStorage.setItem(progressKey(childName), JSON.stringify(next));
+        return next;
+      });
+    },
+    [childName],
+  );
+
   const setLocale = useCallback((nextLocale: Locale) => {
     setLocaleState(nextLocale);
   }, []);
@@ -121,45 +132,54 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
 
   const markLevelVisited = useCallback(
     (level: number) => {
-      const next = {
-        ...progress,
-        visitedLevels: progress.visitedLevels.includes(level)
-          ? progress.visitedLevels
-          : [...progress.visitedLevels, level].sort((a, b) => a - b),
-      };
-      persistProgress(next);
+      updateProgress((previous) => ({
+        ...previous,
+        visitedLevels: previous.visitedLevels.includes(level)
+          ? previous.visitedLevels
+          : [...previous.visitedLevels, level].sort((a, b) => a - b),
+      }));
     },
-    [persistProgress, progress],
+    [updateProgress],
   );
 
   const saveAlphabetIndex = useCallback(
     (index: number) => {
-      if (index <= progress.alphabetIndex) return;
-      persistProgress({ ...progress, alphabetIndex: index });
+      updateProgress((previous) => {
+        if (index <= previous.alphabetIndex) {
+          return previous;
+        }
+        return { ...previous, alphabetIndex: index };
+      });
     },
-    [persistProgress, progress],
+    [updateProgress],
   );
 
   const saveRecognitionScore = useCallback(
     (score: number) => {
-      if (score <= progress.recognitionBest) return;
-      persistProgress({ ...progress, recognitionBest: score });
+      updateProgress((previous) => {
+        if (score <= previous.recognitionBest) {
+          return previous;
+        }
+        return { ...previous, recognitionBest: score };
+      });
     },
-    [persistProgress, progress],
+    [updateProgress],
   );
 
   const saveTracingLetter = useCallback(
     (letterId: string) => {
-      const nextLetters = progress.tracedLetters.includes(letterId)
-        ? progress.tracedLetters
-        : [...progress.tracedLetters, letterId];
-      persistProgress({
-        ...progress,
-        tracingSessions: progress.tracingSessions + 1,
-        tracedLetters: nextLetters,
+      updateProgress((previous) => {
+        const nextLetters = previous.tracedLetters.includes(letterId)
+          ? previous.tracedLetters
+          : [...previous.tracedLetters, letterId];
+        return {
+          ...previous,
+          tracingSessions: previous.tracingSessions + 1,
+          tracedLetters: nextLetters,
+        };
       });
     },
-    [persistProgress, progress],
+    [updateProgress],
   );
 
   const value = useMemo(
